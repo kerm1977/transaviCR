@@ -1,145 +1,259 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row mb-4 text-center">
-    <div class="col-md-4">
-        <div class="card p-3 bg-primary text-white">
-            <h5>Solicitudes</h5>
-            <h2>{{ stats.reservations }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-line text-primary"></i> Panel de Administración</h2>
+    <div>
+        <span class="badge bg-primary p-2 rounded-pill">Sesión: {{ session['role'] }}</span>
+        <a href="/logout" class="btn btn-outline-danger btn-sm ms-2 rounded-pill">Cerrar Sesión</a>
+    </div>
+</div>
+
+<!-- Estadísticas Principales -->
+<div class="row mb-4 g-3 text-center">
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #0d6efd !important;">
+            <h6 class="text-muted small fw-bold">SOLICITUDES</h6>
+            <h2 class="fw-bold m-0">{{ stats.reservations_count }}</h2>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card p-3 bg-success text-white">
-            <h5>Usuarios</h5>
-            <h2>{{ stats.users }}</h2>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #198754 !important;">
+            <h6 class="text-muted small fw-bold">USUARIOS</h6>
+            <h2 class="fw-bold m-0">{{ stats.users_count }}</h2>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card p-3 bg-info text-white">
-            <h5>Colaboradores</h5>
-            <h2>{{ stats.colabs }}</h2>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #0dcaf0 !important;">
+            <h6 class="text-muted small fw-bold">COLABORADORES</h6>
+            <h2 class="fw-bold m-0">{{ stats.colabs_count }}</h2>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #ffc107 !important;">
+            <h6 class="text-muted small fw-bold">WHATSAPP ADMIN</h6>
+            <h5 class="fw-bold m-0">{{ about.mobile_admin if about else 'S/N' }}</h5>
         </div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-8">
-        <div class="card p-4 mb-4">
+    <!-- Notificaciones y Lista de Reservas -->
+    <div class="col-lg-8">
+        <div class="card p-4 shadow-sm border-0 mb-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4>Gestión de Colaboradores</h4>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addColabModal">+ Agregar Colaborador</button>
+                <h4><i class="fas fa-bell text-warning"></i> Área de Notificaciones</h4>
+                <a href="/dashboard/export" class="btn btn-dark btn-sm rounded-pill">Exportar a TXT</a>
             </div>
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Móvil</th>
-                        <th>Licencia</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in colabs %}
-                    <tr>
-                        <td>{{ c.name }} {{ c.last_name1 }}</td>
-                        <td>{{ c.mobile }}</td>
-                        <td>{{ c.license_type }}</td>
-                        <td>
-                            <button class="btn btn-sm btn-danger" onclick="confirmDeletion('colab', {{c.id}})">Borrar</button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="alert alert-info py-2 small">
+                <i class="fas fa-info-circle"></i> Tienes {{ stats.reservations_count }} solicitudes totales en el sistema.
+            </div>
+            
+            <div class="table-responsive mt-3">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Cliente / Destino</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in reservas %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ r.origin }} → {{ r.destination }}</div>
+                                <div class="small text-muted">{{ r.service_category }}</div>
+                            </td>
+                            <td class="small">{{ r.date }}<br>{{ r.departure_time }}</td>
+                            <td>
+                                <span class="badge {% if r.status == 'Pendiente' %}bg-warning{% elif r.status == 'Aprobada' %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                    {{ r.status }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <form action="/dashboard/update_status/{{r.id}}/Aprobada" method="POST">
+                                        <button class="btn btn-sm btn-outline-success"><i class="fas fa-check"></i></button>
+                                    </form>
+                                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="confirmDeletion('res', {{r.id}})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card p-4 mb-3">
-            <h4>Acciones Rápidas</h4>
-            <a href="/dashboard/export" class="btn btn-outline-secondary w-100 mb-2">Exportar Reservas (TXT)</a>
-            <a href="/aboutus/create" class="btn btn-outline-primary w-100">Configurar Empresa</a>
+    <!-- Gestión de Colaboradores y WhatsApp -->
+    <div class="col-lg-4">
+        <!-- Agregar Logo y Configuración WhatsApp -->
+        <div class="card p-4 shadow-sm border-0 mb-4 border-start border-success border-4">
+            <h5 class="text-success"><i class="fab fa-whatsapp"></i> Configuración</h5>
+            <form action="/dashboard/update_whatsapp" method="POST">
+                <div class="mb-3">
+                    <label class="form-label small">Movil Administración</label>
+                    <input type="text" name="mobile_admin" class="form-control form-control-sm" value="{{ about.mobile_admin if about else '' }}" maxlength="8">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Movil Servicio al Cliente</label>
+                    <input type="text" name="mobile_service" class="form-control form-control-sm" value="{{ about.mobile_service if about else '' }}" maxlength="8">
+                </div>
+                <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill">Guardar Teléfonos</button>
+            </form>
+            <hr>
+            <a href="/aboutus/create" class="btn btn-outline-primary btn-sm w-100 rounded-pill">Configurar AboutUs / Logo</a>
         </div>
-        
-        <div class="card p-4">
-            <h4>Notificaciones</h4>
-            <div class="alert alert-light border small">Nueva solicitud de servicio especial recibida.</div>
-            <div class="alert alert-light border small">Actualización de logo pendiente.</div>
+
+        <!-- Lista rápida de Colaboradores -->
+        <div class="card p-4 shadow-sm border-0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-users text-primary"></i> Colaboradores</h5>
+                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#addColabModal">+</button>
+            </div>
+            <div class="list-group list-group-flush">
+                {% for c in colabs %}
+                <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                    <div class="small">
+                        <div class="fw-bold">{{ c.name }} {{ c.last_name1 }}</div>
+                        <div class="text-muted">{{ c.mobile }}</div>
+                    </div>
+                    <button class="btn btn-sm text-danger" onclick="confirmDeletion('colab', {{c.id}})"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Agregar Colaborador -->
+<!-- Modal Agregar Colaborador (Formulario Completo) -->
 <div class="modal fade" id="addColabModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form action="/colaboradores/add" method="POST">
-                <div class="modal-header"><h5>Nuevo Colaborador</h5></div>
-                <div class="modal-body">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+            <form action="/colaboradores/add" method="POST" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Registrar Nuevo Colaborador</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
                     <div class="row g-3">
-                        <div class="col-md-4"><label>Foto</label><input type="file" class="form-control"></div>
-                        <div class="col-md-4"><label>Nombre</label><input type="text" name="name" class="form-control" required></div>
-                        <div class="col-md-4"><label>1er Apellido</label><input type="text" name="last_name1" class="form-control" required></div>
-                        <div class="col-md-4"><label>2do Apellido</label><input type="text" name="last_name2" class="form-control"></div>
-                        <div class="col-md-4"><label>Tel. Fijo</label><input type="text" name="fixed" class="form-control"></div>
-                        <div class="col-md-4"><label>Móvil</label><input type="text" name="mobile" class="form-control" required></div>
-                        <div class="col-md-6"><label>Email</label><input type="email" name="email" class="form-control"></div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small">Foto del Colaborador(a)</label>
+                            <input type="file" name="photo" class="form-control bg-light">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Nombre</label>
+                            <input type="text" name="name" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Primer Apellido</label>
+                            <input type="text" name="last_name1" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Segundo Apellido</label>
+                            <input type="text" name="last_name2" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Teléfono Fijo</label>
+                            <input type="text" name="phone_fixed" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Movil</label>
+                            <input type="text" name="mobile" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Email</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
                         <div class="col-md-6">
-                            <label>Licencia</label>
+                            <label class="form-label small fw-bold text-primary">Licencia (Costa Rica)</label>
                             <select name="license" class="form-select">
-                                <option>B1</option><option>B2</option><option>B3</option><option>C2 (Bus)</option>
+                                <option>B1</option><option>B2</option><option>B3</option><option>B4</option>
+                                <option>C1</option><option selected>C2 (Busetas/Buses)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label>Unidad</label>
+                            <label class="form-label small">Cuenta con Buseta</label>
                             <select name="ownership" class="form-select">
-                                <option>Propia</option><option>Alquilada</option>
+                                <option value="Propia">Propia</option>
+                                <option value="Alquilada">Alquilada</option>
                             </select>
                         </div>
                     </div>
-                    
-                    <hr>
-                    <h6>Información de Busetas</h6>
-                    <div id="busContainer">
-                        <div class="bus-entry border p-2 mb-2 rounded">
+
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold m-0"><i class="fas fa-bus text-primary"></i> Información de Unidades</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addNewBusField()">+ Agregar Buseta</button>
+                    </div>
+
+                    <div id="busFieldsContainer">
+                        <div class="bus-entry border p-3 rounded mb-3 bg-light">
                             <div class="row g-2">
-                                <div class="col-3"><input type="text" name="brand_0" class="form-control" placeholder="Marca"></div>
-                                <div class="col-3"><input type="text" name="plate_0" class="form-control" placeholder="Placa"></div>
-                                <div class="col-3"><input type="number" name="year_0" class="form-control" placeholder="Año"></div>
-                                <div class="col-3"><input type="number" name="capacity_0" class="form-control" placeholder="Cap (8-50)"></div>
+                                <div class="col-md-3">
+                                    <label class="small">Marca</label>
+                                    <input type="text" name="brand_0" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small">Placa</label>
+                                    <input type="text" name="plate_0" class="form-control form-control-sm" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small">Año</label>
+                                    <input type="number" name="year_0" class="form-control form-control-sm" min="1990" max="2026" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small">Capacidad (8-50)</label>
+                                    <input type="number" name="capacity_0" class="form-control form-control-sm" min="8" max="50" required>
+                                </div>
+                                <div class="col-md-12 mt-2">
+                                    <label class="small">Servicios</label>
+                                    <select name="services_0" class="form-select form-select-sm">
+                                        <option>Transporte Estudiantes</option>
+                                        <option>Servicios Especiales</option>
+                                        <option>Ambos</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <input type="hidden" name="bus_count" id="bus_count" value="1">
-                    <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addBusField()">+ Agregar otra buseta</button>
+                    <input type="hidden" name="bus_count" id="bus_count_input" value="1">
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Guardar Colaborador</button>
+                <div class="modal-footer bg-light">
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill">Guardar Todo</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal de Borrado Triple Confirmación (eraser.py logic) -->
+<!-- Modal Eraser (Borrado Seguro) -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white"><h5>⚠️ Confirmación Crítica</h5></div>
-            <div class="modal-body text-center">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">⚠️ ELIMINACIÓN SEGURA</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
                 <div id="step1">
-                    <p>¿Está seguro que desea eliminar este registro?</p>
-                    <button class="btn btn-warning" onclick="showStep(2)">Sí, continuar</button>
+                    <p class="fs-5">¿Deseas eliminar este registro del sistema?</p>
+                    <button class="btn btn-warning w-100 rounded-pill" onclick="showStep(2)">Sí, continuar</button>
                 </div>
                 <div id="step2" class="d-none">
-                    <p class="text-danger fw-bold">ESTA ACCIÓN ES IRREVERSIBLE.</p>
-                    <p>¿Realmente desea borrar todos los datos asociados?</p>
-                    <button class="btn btn-danger" onclick="showStep(3)">Confirmar segunda vez</button>
+                    <p class="text-danger fw-bold fs-5">¡ACCIÓN IRREVERSIBLE!</p>
+                    <p>Se perderán todos los datos vinculados.</p>
+                    <button class="btn btn-danger w-100 rounded-pill" onclick="showStep(3)">Confirmar segunda vez</button>
                 </div>
                 <div id="step3" class="d-none">
-                    <p>Escriba <strong>BORRAR</strong> para finalizar:</p>
-                    <input type="text" id="confirmText" class="form-control mb-3 text-center">
+                    <p>Escribe <strong>BORRAR</strong> para confirmar:</p>
+                    <input type="text" id="confirmInput" class="form-control text-center mb-3">
                     <form id="deleteForm" method="POST">
-                        <button type="button" class="btn btn-dark w-100" onclick="finalDelete()">ELIMINAR DEFINITIVAMENTE</button>
+                        <button type="button" class="btn btn-dark w-100 rounded-pill" onclick="finalDelete()">ELIMINAR DEFINITIVAMENTE</button>
                     </form>
                 </div>
             </div>
@@ -148,43 +262,39 @@
 </div>
 
 <script>
-    let busIndex = 1;
-    function addBusField() {
-        const container = document.getElementById('busContainer');
+    let busCount = 1;
+    function addNewBusField() {
+        if(busCount >= 10) return alert("Máximo 10 unidades");
+        const container = document.getElementById('busFieldsContainer');
         const div = document.createElement('div');
-        div.className = "bus-entry border p-2 mb-2 rounded";
+        div.className = "bus-entry border p-3 rounded mb-3 bg-light";
         div.innerHTML = `
             <div class="row g-2">
-                <div class="col-3"><input type="text" name="brand_${busIndex}" class="form-control" placeholder="Marca"></div>
-                <div class="col-3"><input type="text" name="plate_${busIndex}" class="form-control" placeholder="Placa"></div>
-                <div class="col-3"><input type="number" name="year_${busIndex}" class="form-control" placeholder="Año"></div>
-                <div class="col-3"><input type="number" name="capacity_${busIndex}" class="form-control" placeholder="Cap"></div>
+                <div class="col-md-3"><label class="small">Marca</label><input type="text" name="brand_${busCount}" class="form-control form-control-sm" required></div>
+                <div class="col-md-3"><label class="small">Placa</label><input type="text" name="plate_${busCount}" class="form-control form-control-sm" required></div>
+                <div class="col-md-3"><label class="small">Año</label><input type="number" name="year_${busCount}" class="form-control form-control-sm" required></div>
+                <div class="col-md-3"><label class="small">Capacidad</label><input type="number" name="capacity_${busCount}" class="form-control form-control-sm" required></div>
+                <div class="col-md-12 mt-2"><label class="small">Servicios</label><select name="services_${busCount}" class="form-select form-select-sm"><option>Transporte Estudiantes</option><option>Servicios Especiales</option><option>Ambos</option></select></div>
             </div>`;
         container.appendChild(div);
-        busIndex++;
-        document.getElementById('bus_count').value = busIndex;
+        busCount++;
+        document.getElementById('bus_count_input').value = busCount;
     }
 
     function confirmDeletion(category, id) {
-        const form = document.getElementById('deleteForm');
-        form.action = `/delete/${category}/${id}`;
+        document.getElementById('deleteForm').action = `/delete/${category}/${id}`;
         showStep(1);
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 
-    function showStep(step) {
-        document.getElementById('step1').classList.add('d-none');
-        document.getElementById('step2').classList.add('d-none');
-        document.getElementById('step3').classList.add('d-none');
-        document.getElementById('step' + step).classList.remove('d-none');
+    function showStep(s) {
+        [1,2,3].forEach(n => document.getElementById(`step${n}`).classList.add('d-none'));
+        document.getElementById(`step${s}`).classList.remove('d-none');
     }
 
     function finalDelete() {
-        if(document.getElementById('confirmText').value === 'BORRAR') {
-            document.getElementById('deleteForm').submit();
-        } else {
-            alert("Debe escribir BORRAR correctamente");
-        }
+        if(document.getElementById('confirmInput').value === 'BORRAR') document.getElementById('deleteForm').submit();
+        else alert("Debes escribir BORRAR");
     }
 </script>
 {% endblock %}

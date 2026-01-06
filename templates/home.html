@@ -4,8 +4,20 @@
     <div class="col-md-8">
         <div class="card p-4">
             <h2 class="text-center mb-4">Reserva un Transporte</h2>
-            <form action="/reserve" method="POST">
-                
+            
+            <!-- Selector de Tipo de Servicio (Debajo del Título) -->
+            <div class="mb-4 text-center">
+                <label class="form-label fw-bold">¿Qué tipo de servicio requiere?</label>
+                <select id="mainServiceSelector" class="form-select form-select-lg text-primary fw-bold" onchange="toggleForm(this.value)">
+                    <option value="estandar">Reserva de Transporte Estándar</option>
+                    <option value="empresas">Transporte para Empresas</option>
+                </select>
+            </div>
+
+            <hr>
+
+            <!-- Formulario Estándar (Existente) -->
+            <form id="formEstandar" action="/reserve" method="POST">
                 <div class="mb-4">
                     <label class="form-label fw-bold">Fecha de Salida</label>
                     <div class="row g-2">
@@ -24,7 +36,6 @@
                             </select>
                         </div>
                         <div class="col-4">
-                            <!-- Año configurado para iniciar en 2026 y no permitir menores -->
                             <select name="year" class="form-select" required>
                                 <option value="">Año</option>
                                 {% for y in range(2026, 2036) %}
@@ -94,13 +105,70 @@
                     <textarea name="comments" class="form-control" rows="3" placeholder="Escriba aquí cualquier detalle adicional para su viaje..."></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-lg w-100 btn-rounded">Solicitar Reserva Now</button>
+                <button type="submit" class="btn btn-primary btn-lg w-100 btn-rounded">Solicitar Reserva Estándar</button>
+            </form>
+
+            <!-- Formulario para Empresas (Nuevo) -->
+            <form id="formEmpresas" action="/reserve_company" method="POST" class="d-none">
+                <h4 class="mb-4 text-primary text-center">Formulario de Solicitud Empresarial</h4>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Digite Su Nombre</label>
+                        <input type="text" name="client_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre de La Empresa</label>
+                        <input type="text" name="company_name" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Número de Teléfono Fijo</label>
+                        <input type="tel" name="fixed_phone" class="form-control" placeholder="Ej: 22221111">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Número Móvil</label>
+                        <input type="tel" name="mobile_phone" class="form-control" placeholder="Ej: 88887777" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Contacto Directo</label>
+                    <input type="text" name="direct_contact" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Horario de hasta que se puede contactar</label>
+                    <input type="text" name="contact_hours" class="form-control" placeholder="Ej: De 8am a 5pm" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Describa la Solicitud</label>
+                    <textarea name="request_description" class="form-control" rows="4" placeholder="Detalle las necesidades de transporte para su empresa..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-lg w-100 btn-rounded">Enviar Mensaje a Administración</button>
             </form>
         </div>
     </div>
 </div>
 
 <script>
+    function toggleForm(val) {
+        const formEstandar = document.getElementById('formEstandar');
+        const formEmpresas = document.getElementById('formEmpresas');
+        
+        if(val === 'empresas') {
+            formEstandar.classList.add('d-none');
+            formEmpresas.classList.remove('d-none');
+        } else {
+            formEstandar.classList.remove('d-none');
+            formEmpresas.classList.add('d-none');
+        }
+    }
+
     function togglePickup(val) {
         const div = document.getElementById('pickupDetail');
         if(val === 'si') div.classList.remove('d-none');
