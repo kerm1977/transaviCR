@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h3>Configurar Información de Empresa</h3>
+            <p class="text-muted">Esta información aparecerá en la página pública de "Sobre Nosotros".</p>
+            <form action="/aboutus/create" method="POST">
+                <div class="mb-3">
+                    <label>Misión</label>
+                    <textarea name="mission" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label>Visión</label>
+                    <textarea name="vision" class="form-control" rows="3" required></textarea>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label>Teléfono Admin</label>
+                        <input type="text" name="phone_admin" class="form-control phone-input" maxlength="8" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Móvil Admin</label>
+                        <input type="text" name="mobile_admin" class="form-control phone-input" maxlength="8" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label>Móvil Serv. Cliente</label>
+                        <input type="text" name="mobile_service" class="form-control phone-input" maxlength="8" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label>Email de Contacto</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label>Descripción General</label>
+                    <textarea name="description" class="form-control" rows="4"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 btn-rounded">Guardar Información</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Validación estricta para teléfonos: solo 8 números
+    document.querySelectorAll('.phone-input').forEach(input => {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if(this.value.length > 8) this.value = this.value.slice(0, 8);
+        });
+        
+        input.addEventListener('blur', function() {
+            if(this.value.length !== 8 && this.value.length > 0) {
+                alert("El número debe tener exactamente 8 dígitos.");
+                this.focus();
+            }
+        });
+    });
+</script>
+{% endblock %}

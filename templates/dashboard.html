@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card p-3 bg-primary text-white">
+            <h5>Solicitudes</h5>
+            <h2>{{ stats.reservations }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 bg-success text-white">
+            <h5>Usuarios</h5>
+            <h2>{{ stats.users }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 bg-info text-white">
+            <h5>Colaboradores</h5>
+            <h2>{{ stats.colabs }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card p-4 mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Gestión de Colaboradores</h4>
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addColabModal">+ Agregar Colaborador</button>
+            </div>
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Móvil</th>
+                        <th>Licencia</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in colabs %}
+                    <tr>
+                        <td>{{ c.name }} {{ c.last_name1 }}</td>
+                        <td>{{ c.mobile }}</td>
+                        <td>{{ c.license_type }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="confirmDeletion('colab', {{c.id}})">Borrar</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card p-4 mb-3">
+            <h4>Acciones Rápidas</h4>
+            <a href="/dashboard/export" class="btn btn-outline-secondary w-100 mb-2">Exportar Reservas (TXT)</a>
+            <a href="/aboutus/create" class="btn btn-outline-primary w-100">Configurar Empresa</a>
+        </div>
+        
+        <div class="card p-4">
+            <h4>Notificaciones</h4>
+            <div class="alert alert-light border small">Nueva solicitud de servicio especial recibida.</div>
+            <div class="alert alert-light border small">Actualización de logo pendiente.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Agregar Colaborador -->
+<div class="modal fade" id="addColabModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="/colaboradores/add" method="POST">
+                <div class="modal-header"><h5>Nuevo Colaborador</h5></div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4"><label>Foto</label><input type="file" class="form-control"></div>
+                        <div class="col-md-4"><label>Nombre</label><input type="text" name="name" class="form-control" required></div>
+                        <div class="col-md-4"><label>1er Apellido</label><input type="text" name="last_name1" class="form-control" required></div>
+                        <div class="col-md-4"><label>2do Apellido</label><input type="text" name="last_name2" class="form-control"></div>
+                        <div class="col-md-4"><label>Tel. Fijo</label><input type="text" name="fixed" class="form-control"></div>
+                        <div class="col-md-4"><label>Móvil</label><input type="text" name="mobile" class="form-control" required></div>
+                        <div class="col-md-6"><label>Email</label><input type="email" name="email" class="form-control"></div>
+                        <div class="col-md-6">
+                            <label>Licencia</label>
+                            <select name="license" class="form-select">
+                                <option>B1</option><option>B2</option><option>B3</option><option>C2 (Bus)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Unidad</label>
+                            <select name="ownership" class="form-select">
+                                <option>Propia</option><option>Alquilada</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    <h6>Información de Busetas</h6>
+                    <div id="busContainer">
+                        <div class="bus-entry border p-2 mb-2 rounded">
+                            <div class="row g-2">
+                                <div class="col-3"><input type="text" name="brand_0" class="form-control" placeholder="Marca"></div>
+                                <div class="col-3"><input type="text" name="plate_0" class="form-control" placeholder="Placa"></div>
+                                <div class="col-3"><input type="number" name="year_0" class="form-control" placeholder="Año"></div>
+                                <div class="col-3"><input type="number" name="capacity_0" class="form-control" placeholder="Cap (8-50)"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" name="bus_count" id="bus_count" value="1">
+                    <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addBusField()">+ Agregar otra buseta</button>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Guardar Colaborador</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Borrado Triple Confirmación (eraser.py logic) -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white"><h5>⚠️ Confirmación Crítica</h5></div>
+            <div class="modal-body text-center">
+                <div id="step1">
+                    <p>¿Está seguro que desea eliminar este registro?</p>
+                    <button class="btn btn-warning" onclick="showStep(2)">Sí, continuar</button>
+                </div>
+                <div id="step2" class="d-none">
+                    <p class="text-danger fw-bold">ESTA ACCIÓN ES IRREVERSIBLE.</p>
+                    <p>¿Realmente desea borrar todos los datos asociados?</p>
+                    <button class="btn btn-danger" onclick="showStep(3)">Confirmar segunda vez</button>
+                </div>
+                <div id="step3" class="d-none">
+                    <p>Escriba <strong>BORRAR</strong> para finalizar:</p>
+                    <input type="text" id="confirmText" class="form-control mb-3 text-center">
+                    <form id="deleteForm" method="POST">
+                        <button type="button" class="btn btn-dark w-100" onclick="finalDelete()">ELIMINAR DEFINITIVAMENTE</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let busIndex = 1;
+    function addBusField() {
+        const container = document.getElementById('busContainer');
+        const div = document.createElement('div');
+        div.className = "bus-entry border p-2 mb-2 rounded";
+        div.innerHTML = `
+            <div class="row g-2">
+                <div class="col-3"><input type="text" name="brand_${busIndex}" class="form-control" placeholder="Marca"></div>
+                <div class="col-3"><input type="text" name="plate_${busIndex}" class="form-control" placeholder="Placa"></div>
+                <div class="col-3"><input type="number" name="year_${busIndex}" class="form-control" placeholder="Año"></div>
+                <div class="col-3"><input type="number" name="capacity_${busIndex}" class="form-control" placeholder="Cap"></div>
+            </div>`;
+        container.appendChild(div);
+        busIndex++;
+        document.getElementById('bus_count').value = busIndex;
+    }
+
+    function confirmDeletion(category, id) {
+        const form = document.getElementById('deleteForm');
+        form.action = `/delete/${category}/${id}`;
+        showStep(1);
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    function showStep(step) {
+        document.getElementById('step1').classList.add('d-none');
+        document.getElementById('step2').classList.add('d-none');
+        document.getElementById('step3').classList.add('d-none');
+        document.getElementById('step' + step).classList.remove('d-none');
+    }
+
+    function finalDelete() {
+        if(document.getElementById('confirmText').value === 'BORRAR') {
+            document.getElementById('deleteForm').submit();
+        } else {
+            alert("Debe escribir BORRAR correctamente");
+        }
+    }
+</script>
+{% endblock %}
