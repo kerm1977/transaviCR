@@ -2,16 +2,18 @@ from extensions import db
 
 class User(db.Model):
     """
-    Modelo para gestionar los usuarios del sistema (Administradores y Clientes).
+    Modelo para gestionar los usuarios del sistema.
+    Incluye email como campo obligatorio para el login.
     """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False) # Campo clave para el login
     password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), default='user') # 'admin' o 'user'
+    role = db.Column(db.String(20), default='user') 
 
 class Collaborator(db.Model):
     """
-    Modelo para los transportistas o dueños de busetas.
+    Modelo para los colaboradores (choferes/transportistas).
     """
     id = db.Column(db.Integer, primary_key=True)
     photo = db.Column(db.String(255))
@@ -22,13 +24,12 @@ class Collaborator(db.Model):
     mobile = db.Column(db.String(20))
     email = db.Column(db.String(100))
     license_type = db.Column(db.String(50))
-    ownership = db.Column(db.String(20)) # Propia o Alquilada
-    # Relación con sus vehículos
+    ownership = db.Column(db.String(20)) 
     buses = db.relationship('Bus', backref='owner', lazy=True, cascade="all, delete-orphan")
 
 class Bus(db.Model):
     """
-    Modelo para las busetas registradas por los colaboradores.
+    Modelo para las unidades de transporte.
     """
     id = db.Column(db.Integer, primary_key=True)
     collaborator_id = db.Column(db.Integer, db.ForeignKey('collaborator.id'))
@@ -36,11 +37,11 @@ class Bus(db.Model):
     plate = db.Column(db.String(20))
     year = db.Column(db.Integer)
     capacity = db.Column(db.Integer)
-    service_type = db.Column(db.String(50)) # Estudiantes, Especiales, Ambos
+    service_type = db.Column(db.String(50)) 
 
 class Reservation(db.Model):
     """
-    Modelo para las solicitudes de transporte hechas por los usuarios.
+    Modelo para las solicitudes de reserva.
     """
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.String(20)) 
@@ -48,7 +49,7 @@ class Reservation(db.Model):
     origin_url = db.Column(db.String(500))
     departure_time = db.Column(db.String(10))
     needs_pickup = db.Column(db.Boolean)
-    pickup_locations = db.Column(db.Text) # Lista separada por comas
+    pickup_locations = db.Column(db.Text) 
     destination = db.Column(db.String(255))
     destination_url = db.Column(db.String(500))
     service_category = db.Column(db.String(50))
@@ -58,7 +59,7 @@ class Reservation(db.Model):
 
 class AboutUs(db.Model):
     """
-    Modelo dinámico para la información de contacto y descripción de la empresa.
+    Modelo para la información de contacto y configuración de la empresa.
     """
     id = db.Column(db.Integer, primary_key=True)
     logo = db.Column(db.String(255))

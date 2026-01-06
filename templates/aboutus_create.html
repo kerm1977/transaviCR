@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4 shadow border-0" style="border-radius: 20px;">
+            <div class="text-center mb-4">
+                <h2 class="text-primary"><i class="fas fa-building"></i> Configurar Empresa</h2>
+                <p class="text-muted">Actualiza la información pública, contacto y logo.</p>
+            </div>
+            
+            <!-- Importante: enctype="multipart/form-data" es necesario para subir archivos -->
+            <form action="{{ url_for('main.create_about') }}" method="POST" enctype="multipart/form-data">
+                
+                <div class="mb-4 text-center">
+                    <label class="form-label fw-bold small">Logo de la Empresa</label>
+                    <div class="mb-2 position-relative d-inline-block">
+                        <!-- Imagen de Previsualización -->
+                        <img id="logoPreview" 
+                             src="{{ url_for('static', filename=about.logo) if about and about.logo else '' }}" 
+                             alt="Vista Previa Logo" 
+                             class="img-thumbnail {{ 'd-none' if not (about and about.logo) else '' }}" 
+                             style="max-height: 150px; max-width: 100%;">
+                        
+                        <!-- Placeholder si no hay imagen -->
+                        <div id="logoPlaceholder" class="p-4 bg-light border rounded text-muted {{ 'd-none' if about and about.logo else '' }}">
+                            <i class="fas fa-image fa-2x mb-2"></i><br>
+                            Sin logo seleccionado
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="logoInput" name="logo" class="form-control mt-2" accept="image/*" onchange="previewLogo(event)">
+                    <div class="form-text">Formatos: PNG, JPG, JPEG. Dejar en blanco para mantener el actual.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Misión</label>
+                    <textarea name="mission" class="form-control bg-light" rows="3" required>{{ about.mission if about else '' }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Visión</label>
+                    <textarea name="vision" class="form-control bg-light" rows="3" required>{{ about.vision if about else '' }}</textarea>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Tel. Admin (Fijo)</label>
+                        <input type="text" name="phone_admin" class="form-control phone-input bg-light" value="{{ about.phone_admin if about else '' }}" maxlength="8">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Móvil Admin</label>
+                        <input type="text" name="mobile_admin" class="form-control phone-input bg-light" value="{{ about.mobile_admin if about else '' }}" maxlength="8" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small">Móvil Serv. Cliente</label>
+                        <input type="text" name="mobile_service" class="form-control phone-input bg-light" value="{{ about.mobile_service if about else '' }}" maxlength="8" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Email de Contacto</label>
+                    <input type="email" name="email" class="form-control bg-light" value="{{ about.email if about else '' }}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold small">Descripción General</label>
+                    <textarea name="description" class="form-control bg-light" rows="4">{{ about.description if about else '' }}</textarea>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">Guardar Cambios</button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Función para previsualizar el logo antes de subirlo
+    function previewLogo(event) {
+        const input = event.target;
+        const preview = document.getElementById('logoPreview');
+        const placeholder = document.getElementById('logoPlaceholder');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('d-none');
+                placeholder.classList.add('d-none');
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            // Si el usuario cancela la selección y no había imagen previa, mostrar placeholder
+            // Nota: Esto es opcional, depende de si quieres volver al estado original o mantener la anterior
+            if (!preview.getAttribute('src')) {
+                 preview.classList.add('d-none');
+                 placeholder.classList.remove('d-none');
+            }
+        }
+    }
+
+    // Validación estricta para teléfonos: solo números
+    document.querySelectorAll('.phone-input').forEach(input => {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if(this.value.length > 8) this.value = this.value.slice(0, 8);
+        });
+        
+        input.addEventListener('blur', function() {
+            if(this.value.length !== 8 && this.value.length > 0) {
+                alert("El número debe tener exactamente 8 dígitos.");
+                this.focus();
+            }
+        });
+    });
+</script>
+{% endblock %}

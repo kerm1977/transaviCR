@@ -44,8 +44,10 @@
                 <h4><i class="fas fa-bell text-warning"></i> Área de Notificaciones</h4>
                 <a href="/dashboard/export" class="btn btn-dark btn-sm rounded-pill">Exportar a TXT</a>
             </div>
-            <div class="alert alert-info py-2 small">
-                <i class="fas fa-info-circle"></i> Tienes {{ stats.reservations_count }} solicitudes totales en el sistema.
+            
+            <div class="alert alert-info py-2 small d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-info-circle"></i> Tienes {{ stats.reservations_count }} solicitudes totales en el sistema.</span>
+                <span id="notifCount" class="badge bg-danger rounded-pill d-none">Nuevos cambios</span>
             </div>
             
             <div class="table-responsive mt-3">
@@ -296,5 +298,20 @@
         if(document.getElementById('confirmInput').value === 'BORRAR') document.getElementById('deleteForm').submit();
         else alert("Debes escribir BORRAR");
     }
+
+    // --- NUEVO: SISTEMA DE NOTIFICACIONES ---
+    function checkUpdates() {
+        // En un entorno real, aquí harías fetch('/api/check_updates')
+        // Por ahora, simulamos una alerta visual si hay cambios (puedes ajustar esta lógica)
+        const badge = document.getElementById('notifCount');
+        if (badge) {
+            // Animación simple para llamar la atención
+            badge.classList.add('animate__animated', 'animate__pulse');
+            setTimeout(() => badge.classList.remove('animate__animated', 'animate__pulse'), 1000);
+        }
+    }
+    
+    // Revisar actualizaciones cada 30 segundos
+    setInterval(checkUpdates, 30000);
 </script>
 {% endblock %}

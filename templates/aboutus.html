@@ -1,65 +1,122 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card p-4">
-            <h3>Configurar Información de Empresa</h3>
-            <p class="text-muted">Esta información aparecerá en la página pública de "Sobre Nosotros".</p>
-            <form action="/aboutus/create" method="POST">
-                <div class="mb-3">
-                    <label>Misión</label>
-                    <textarea name="mission" class="form-control" rows="3" required></textarea>
+
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-10">
+        
+        <!-- Encabezado y Logo -->
+        <div class="text-center mb-5">
+            {% if info and info.logo %}
+                <img src="{{ url_for('static', filename=info.logo) }}" alt="Logo Empresa" class="img-fluid mb-4 shadow-sm rounded" style="max-height: 200px;">
+            {% else %}
+                <div class="display-1 text-primary mb-3"><i class="fas fa-bus-alt"></i></div>
+            {% endif %}
+            
+            <h1 class="display-4 fw-bold text-dark">Sobre Nosotros</h1>
+            
+            {% if info and info.description %}
+                <p class="lead text-muted mt-3 px-md-5">{{ info.description }}</p>
+            {% else %}
+                <p class="lead text-muted mt-3">Información detallada de la empresa disponible próximamente.</p>
+            {% endif %}
+        </div>
+
+        {% if info %}
+        <!-- Sección de Misión y Visión -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm text-center p-4 hover-card">
+                    <div class="card-body">
+                        <div class="mb-4 text-success icon-circle bg-light-success mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                            <i class="fas fa-bullseye fa-2x"></i>
+                        </div>
+                        <h3 class="card-title fw-bold">Nuestra Misión</h3>
+                        <p class="card-text text-muted mt-3">{{ info.mission }}</p>
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label>Visión</label>
-                    <textarea name="vision" class="form-control" rows="3" required></textarea>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100 border-0 shadow-sm text-center p-4 hover-card">
+                    <div class="card-body">
+                        <div class="mb-4 text-info icon-circle bg-light-info mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                            <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <h3 class="card-title fw-bold">Nuestra Visión</h3>
+                        <p class="card-text text-muted mt-3">{{ info.vision }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Información de Contacto -->
+        <div class="card border-0 shadow bg-primary text-white rounded-4 overflow-hidden">
+            <div class="card-body p-5">
+                <div class="text-center mb-5">
+                    <h2 class="fw-bold">Contáctanos</h2>
+                    <p class="opacity-75">Estamos disponibles para atender tus consultas y coordinar tus viajes.</p>
                 </div>
                 
-                <div class="row mb-3">
-                    <div class="col-md-4">
-                        <label>Teléfono Admin</label>
-                        <input type="text" name="phone_admin" class="form-control phone-input" maxlength="8" required>
+                <div class="row text-center g-4 justify-content-center">
+                    
+                    {% if info.phone_admin %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="contact-item p-3">
+                            <i class="fas fa-phone-alt fa-2x mb-3 opacity-75"></i>
+                            <h5 class="fw-bold">Teléfono Fijo</h5>
+                            <p class="mb-0 fw-light">{{ info.phone_admin }}</p>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label>Móvil Admin</label>
-                        <input type="text" name="mobile_admin" class="form-control phone-input" maxlength="8" required>
+                    {% endif %}
+
+                    {% if info.mobile_admin %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="contact-item p-3">
+                            <i class="fab fa-whatsapp fa-2x mb-3 opacity-75"></i>
+                            <h5 class="fw-bold">Administración</h5>
+                            <a href="https://wa.me/506{{ info.mobile_admin }}" class="text-white text-decoration-none fw-light hover-underline" target="_blank">
+                                {{ info.mobile_admin }}
+                            </a>
+                        </div>
                     </div>
-                    <div class="col-md-4">
-                        <label>Móvil Serv. Cliente</label>
-                        <input type="text" name="mobile_service" class="form-control phone-input" maxlength="8" required>
+                    {% endif %}
+
+                    {% if info.mobile_service %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="contact-item p-3">
+                            <i class="fas fa-headset fa-2x mb-3 opacity-75"></i>
+                            <h5 class="fw-bold">Servicio al Cliente</h5>
+                            <a href="https://wa.me/506{{ info.mobile_service }}" class="text-white text-decoration-none fw-light hover-underline" target="_blank">
+                                {{ info.mobile_service }}
+                            </a>
+                        </div>
                     </div>
-                </div>
+                    {% endif %}
 
-                <div class="mb-3">
-                    <label>Email de Contacto</label>
-                    <input type="email" name="email" class="form-control" required>
+                    {% if info.email %}
+                    <div class="col-md-3 col-sm-6">
+                        <div class="contact-item p-3">
+                            <i class="fas fa-envelope fa-2x mb-3 opacity-75"></i>
+                            <h5 class="fw-bold">Correo Electrónico</h5>
+                            <a href="mailto:{{ info.email }}" class="text-white text-decoration-none fw-light hover-underline">
+                                {{ info.email }}
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-
-                <div class="mb-3">
-                    <label>Descripción General</label>
-                    <textarea name="description" class="form-control" rows="4"></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 btn-rounded">Guardar Información</button>
-            </form>
+            </div>
         </div>
+        {% endif %}
+
     </div>
 </div>
 
-<script>
-    // Validación estricta para teléfonos: solo 8 números
-    document.querySelectorAll('.phone-input').forEach(input => {
-        input.addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-            if(this.value.length > 8) this.value = this.value.slice(0, 8);
-        });
-        
-        input.addEventListener('blur', function() {
-            if(this.value.length !== 8 && this.value.length > 0) {
-                alert("El número debe tener exactamente 8 dígitos.");
-                this.focus();
-            }
-        });
-    });
-</script>
+<style>
+    .bg-light-success { background-color: #e8f5e9; }
+    .bg-light-info { background-color: #e1f5fe; }
+    .hover-card { transition: transform 0.3s ease; }
+    .hover-card:hover { transform: translateY(-5px); }
+    .hover-underline:hover { text-decoration: underline !important; }
+</style>
+
 {% endblock %}
