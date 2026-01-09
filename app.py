@@ -21,9 +21,12 @@ def create_app():
     from rutas import main_bp
     # CAMBIO: Importamos users_bp en lugar de admin_bp
     from users import users_bp
+    # Mantenemos el perfil que acabamos de crear
+    from profile import profile_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(users_bp) # Registramos el nuevo blueprint de usuarios
+    app.register_blueprint(profile_bp) # Registramos el blueprint de perfil
 
     # Inicialización de la base de datos y datos maestros
     with app.app_context():
@@ -37,8 +40,6 @@ def create_app():
         # Verificar si existe el administrador del sistema
         if not User.query.filter_by(username='admin').first():
             # Crear admin por defecto si no existe
-            # Usamos el método set_password del modelo User si prefieres, 
-            # o lo hacemos manual como estaba antes para asegurar compatibilidad.
             hashed_pw = bcrypt.generate_password_hash('admin123').decode('utf-8')
             
             admin = User(
@@ -57,4 +58,5 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+    # Se agrega el puerto 5000 explícitamente como solicitaste
     app.run(debug=True, port=5000)

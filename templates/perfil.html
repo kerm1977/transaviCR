@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        
+        <!-- Tarjeta de Búsqueda -->
+        <div class="card shadow border-0 mb-5" style="border-radius: 15px;">
+            <div class="card-body p-4 text-center">
+                <h2 class="text-primary fw-bold mb-3"><i class="fas fa-search-location"></i> Mis Solicitudes</h2>
+                <p class="text-muted mb-4">Ingresa tu PIN de Cliente Frecuente (8 caracteres) para ver el estado de tus viajes.</p>
+                
+                <form method="POST" action="/perfil" class="d-flex justify-content-center">
+                    <div class="input-group" style="max-width: 400px;">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-key text-muted"></i></span>
+                        <input type="text" name="pin" class="form-control form-control-lg border-start-0 shadow-none text-center text-uppercase fw-bold" 
+                               placeholder="EJ: A1B2C3D4" value="{{ pin }}" maxlength="8" required>
+                        <button class="btn btn-primary btn-lg px-4" type="submit">Buscar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        {% if client %}
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="text-muted">Hola, <span class="text-dark fw-bold">{{ client.name }} {{ client.last_name1 }}</span></h5>
+                <span class="badge bg-light text-dark border">{{ reservations|length }} Solicitudes</span>
+            </div>
+
+            {% for res in reservations %}
+            <div class="card shadow-sm border-0 mb-3 hover-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <!-- Columna Estado -->
+                        <div class="col-3 col-md-2 text-center">
+                            {% if res.status == 'Pendiente' %}
+                                <div class="badge bg-warning text-dark p-2 w-100">Pendiente</div>
+                            {% elif res.status == 'Aprobada' %}
+                                <div class="badge bg-success p-2 w-100">Aprobada</div>
+                            {% else %}
+                                <div class="badge bg-secondary p-2 w-100">{{ res.status }}</div>
+                            {% endif %}
+                            <small class="d-block mt-2 text-muted x-small">#{{ res.id }}</small>
+                        </div>
+
+                        <!-- Columna Detalles -->
+                        <div class="col-9 col-md-10">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="fw-bold mb-1 text-primary">{{ res.service_category }}</h5>
+                                <small class="text-muted"><i class="far fa-calendar-alt"></i> 
+                                    {% if res.service_category == 'Viajes Internacionales' %}
+                                        {{ res.date }} (Salida)
+                                    {% else %}
+                                        {{ res.date }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            
+                            <p class="mb-1 small">
+                                <strong>Destino:</strong> 
+                                {% if res.service_category == 'Viajes Internacionales' %}
+                                    {{ res.country }} - {{ res.destination }}
+                                {% else %}
+                                    {{ res.destination or 'No especificado' }}
+                                {% endif %}
+                            </p>
+                            
+                            <div class="d-flex flex-wrap gap-2 small text-muted">
+                                <span><i class="far fa-clock"></i> {{ res.departure_time }}</span>
+                                <span><i class="fas fa-users"></i> {{ res.capacity_needed }} pax</span>
+                                {% if res.trip_duration %}
+                                    <span><i class="fas fa-hourglass-half"></i> {{ res.trip_duration }} días</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+
+    </div>
+</div>
+
+<style>
+    .hover-card { transition: transform 0.2s; }
+    .hover-card:hover { transform: translateY(-2px); }
+    .x-small { font-size: 0.7rem; }
+    /* Para inputs que se vean mayúsculas mientras escribe */
+    input[name="pin"] { text-transform: uppercase; letter-spacing: 2px; }
+</style>
+{% endblock %}

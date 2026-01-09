@@ -21,11 +21,12 @@ def allowed_file(filename):
 
 def generate_pin():
     """
-    Genera un PIN numérico de 4 dígitos único para el cliente.
-    Verifica en la BD que no exista antes de devolverlo.
+    Genera un PIN ALFANUMÉRICO de 8 caracteres (Letras Mayúsculas y Números).
+    Ejemplo: A1B2C3D4
     """
+    characters = string.ascii_uppercase + string.digits
     while True:
-        pin = ''.join(random.choices(string.digits, k=4))
+        pin = ''.join(random.choices(characters, k=8))
         if not Client.query.filter_by(pin=pin).first():
             return pin
 
@@ -41,6 +42,7 @@ def get_client_info(pin):
     API JSON: Busca un cliente por su PIN.
     Usado por el frontend para autocompletar el formulario.
     """
+    pin = pin.upper()
     client = Client.query.filter_by(pin=pin).first()
     if client:
         return jsonify({
@@ -63,7 +65,12 @@ def create_reservation():
     # 1. GESTIÓN DEL CLIENTE (Datos Personales y PIN)
     # ---------------------------------------------------------
     pin_ingresado = request.form.get('client_pin')
+    if pin_ingresado:
+        pin_ingresado = pin_ingresado.upper() # Normalizar
+
     client = None
+    is_new_client = False # Bandera para saber si debemos mostrar el modal
+    new_pin_generated = None
     
     # Capturar datos del formulario
     name = request.form.get('client_name')
@@ -85,9 +92,9 @@ def create_reservation():
         client.email = email
     else:
         # Si no existe, creamos uno nuevo con un PIN generado
-        new_pin = generate_pin()
+        new_pin_generated = generate_pin()
         client = Client(
-            pin=new_pin,
+            pin=new_pin_generated,
             name=name,
             last_name1=lname1,
             last_name2=lname2,
@@ -96,7 +103,7 @@ def create_reservation():
         )
         db.session.add(client)
         db.session.commit() # Commit necesario para obtener el ID y asegurar el PIN
-        flash(f"¡Usuario registrado! Tu PIN para autocompletar futuras reservas es: {new_pin}", "info")
+        is_new_client = True
 
     # ---------------------------------------------------------
     # 2. PROCESAMIENTO DE DATOS SEGÚN TIPO DE SERVICIO
@@ -152,7 +159,14 @@ def create_reservation():
     db.session.add(new_res)
     db.session.commit()
     
-    flash("Solicitud enviada correctamente. Nos pondremos en contacto pronto.", "success")
+    # Manejo de Mensajes y Modals
+    if is_new_client and new_pin_generated:
+        # Usamos una categoría especial 'new_pin_modal' para que el frontend lo detecte
+        # Esto disparará el Modal que diseñamos en home.html
+        flash(f"{new_pin_generated}", "new_pin_modal") 
+    else:
+        flash("Solicitud enviada correctamente. Puedes ver el estado en la sección 'Mis Solicitudes' con tu PIN.", "success")
+
     return redirect(url_for('main.home'))
 
 # ---------------------------------------------------------
