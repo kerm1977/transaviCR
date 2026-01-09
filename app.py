@@ -19,28 +19,39 @@ def create_app():
 
     # Registro de Blueprints para modularizar rutas
     from rutas import main_bp
-    from admin import admin_bp
+    # CAMBIO: Importamos users_bp en lugar de admin_bp
+    from users import users_bp
     
     app.register_blueprint(main_bp)
-    app.register_blueprint(admin_bp)
+    app.register_blueprint(users_bp) # Registramos el nuevo blueprint de usuarios
 
     # Inicialización de la base de datos y datos maestros
     with app.app_context():
+        # Importamos modelos para asegurar que SQLAlchemy los reconozca al crear tablas
         import models
+        # CAMBIO: Importamos User desde users, no desde models
+        from users import User
+        
         db.create_all()
         
-        from models import User
         # Verificar si existe el administrador del sistema
         if not User.query.filter_by(username='admin').first():
+            # Crear admin por defecto si no existe
+            # Usamos el método set_password del modelo User si prefieres, 
+            # o lo hacemos manual como estaba antes para asegurar compatibilidad.
             hashed_pw = bcrypt.generate_password_hash('admin123').decode('utf-8')
+            
             admin = User(
                 username='admin', 
                 email='admin@sistema.com', 
-                password=hashed_pw, 
                 role='admin'
             )
+            # Asignamos el password hasheado manualmente
+            admin.password = hashed_pw
+            
             db.session.add(admin)
             db.session.commit()
+            print("Usuario admin creado: admin / admin123")
 
     return app
 

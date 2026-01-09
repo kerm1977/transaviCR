@@ -1,15 +1,23 @@
+# Archivo: models.py
 from extensions import db
 
-class User(db.Model):
+# NOTA: El modelo 'User' se encuentra en 'users.py' (anteriormente admin.py)
+
+class Client(db.Model):
     """
-    Modelo para gestionar los usuarios del sistema.
-    Incluye email como campo obligatorio para el login.
+    Modelo para almacenar la información de los clientes recurrentes.
+    Se identifican por un PIN único.
     """
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False) # Campo clave para el login
-    password = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), default='user') 
+    pin = db.Column(db.String(10), unique=True, nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    last_name1 = db.Column(db.String(50), nullable=False)
+    last_name2 = db.Column(db.String(50), nullable=False)
+    phone = db.Column(db.String(8), nullable=False)
+    email = db.Column(db.String(100))
+    
+    # Relación con reservas
+    reservations = db.relationship('Reservation', backref='client', lazy=True)
 
 class Collaborator(db.Model):
     """
@@ -44,7 +52,10 @@ class Reservation(db.Model):
     Modelo para las solicitudes de reserva.
     """
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.String(20)) 
+    # Relación con el Cliente
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=True)
+    
+    date = db.Column(db.String(20)) # Usado como Fecha de Salida
     origin = db.Column(db.String(255))
     origin_url = db.Column(db.String(500))
     departure_time = db.Column(db.String(10))
@@ -56,6 +67,15 @@ class Reservation(db.Model):
     capacity_needed = db.Column(db.Integer)
     comments = db.Column(db.Text)
     status = db.Column(db.String(20), default='Pendiente')
+    
+    # Campos específicos: Estudiantes
+    institution_name = db.Column(db.String(100))
+    schedule_type = db.Column(db.String(50))
+    
+    # Campos específicos: Internacional (NUEVOS)
+    country = db.Column(db.String(50))       # País destino
+    return_date = db.Column(db.String(20))   # Fecha de regreso
+    trip_duration = db.Column(db.Integer)    # Cantidad de días
 
 class AboutUs(db.Model):
     """

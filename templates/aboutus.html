@@ -9,15 +9,15 @@
             {% if info and info.logo %}
                 <img src="{{ url_for('static', filename=info.logo) }}" alt="Logo Empresa" class="img-fluid mb-4 shadow-sm rounded" style="max-height: 200px;">
             {% else %}
-                <div class="display-1 text-primary mb-3"><i class="fas fa-bus-alt"></i></div>
+                <div class="display-1 text-warning mb-3"><i class="fas fa-bus-alt"></i></div>
             {% endif %}
             
-            <h1 class="display-4 fw-bold text-dark">Sobre Nosotros</h1>
+            <h1 class="display-4 fw-bold text-warning">Sobre Nosotros</h1>
             
             {% if info and info.description %}
-                <p class="lead text-muted mt-3 px-md-5">{{ info.description }}</p>
+                <p class="lead text-warning-muted mt-3 px-md-5">{{ info.description }}</p>
             {% else %}
-                <p class="lead text-muted mt-3">Información detallada de la empresa disponible próximamente.</p>
+                <p class="lead text-warning-muted mt-3">Información detallada de la empresa disponible próximamente.</p>
             {% endif %}
         </div>
 
@@ -25,31 +25,31 @@
         <!-- Sección de Misión y Visión -->
         <div class="row g-4 mb-5">
             <div class="col-md-6">
-                <div class="card h-100 border-0 shadow-sm text-center p-4 hover-card">
+                <div class="card h-100 border-warning shadow-sm text-center p-4 hover-card">
                     <div class="card-body">
-                        <div class="mb-4 text-success icon-circle bg-light-success mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                        <div class="mb-4 text-warning icon-circle bg-light-warning mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
                             <i class="fas fa-bullseye fa-2x"></i>
                         </div>
-                        <h3 class="card-title fw-bold">Nuestra Misión</h3>
-                        <p class="card-text text-muted mt-3">{{ info.mission }}</p>
+                        <h3 class="card-title fw-bold text-warning">Nuestra Misión</h3>
+                        <p class="card-text text-warning-muted mt-3">{{ info.mission }}</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card h-100 border-0 shadow-sm text-center p-4 hover-card">
+                <div class="card h-100 border-warning shadow-sm text-center p-4 hover-card">
                     <div class="card-body">
-                        <div class="mb-4 text-info icon-circle bg-light-info mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
+                        <div class="mb-4 text-warning icon-circle bg-light-warning mx-auto d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; border-radius: 50%;">
                             <i class="fas fa-eye fa-2x"></i>
                         </div>
-                        <h3 class="card-title fw-bold">Nuestra Visión</h3>
-                        <p class="card-text text-muted mt-3">{{ info.vision }}</p>
+                        <h3 class="card-title fw-bold text-warning">Nuestra Visión</h3>
+                        <p class="card-text text-warning-muted mt-3">{{ info.vision }}</p>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Información de Contacto -->
-        <div class="card border-0 shadow bg-primary text-white rounded-4 overflow-hidden">
+        <div class="card border-0 shadow bg-warning text-dark rounded-4 overflow-hidden">
             <div class="card-body p-5">
                 <div class="text-center mb-5">
                     <h2 class="fw-bold">Contáctanos</h2>
@@ -73,7 +73,7 @@
                         <div class="contact-item p-3">
                             <i class="fab fa-whatsapp fa-2x mb-3 opacity-75"></i>
                             <h5 class="fw-bold">Administración</h5>
-                            <a href="https://wa.me/506{{ info.mobile_admin }}" class="text-white text-decoration-none fw-light hover-underline" target="_blank">
+                            <a href="https://wa.me/506{{ info.mobile_admin }}" class="text-dark text-decoration-none fw-light hover-underline" target="_blank">
                                 {{ info.mobile_admin }}
                             </a>
                         </div>
@@ -85,7 +85,7 @@
                         <div class="contact-item p-3">
                             <i class="fas fa-headset fa-2x mb-3 opacity-75"></i>
                             <h5 class="fw-bold">Servicio al Cliente</h5>
-                            <a href="https://wa.me/506{{ info.mobile_service }}" class="text-white text-decoration-none fw-light hover-underline" target="_blank">
+                            <a href="https://wa.me/506{{ info.mobile_service }}" class="text-dark text-decoration-none fw-light hover-underline" target="_blank">
                                 {{ info.mobile_service }}
                             </a>
                         </div>
@@ -97,7 +97,7 @@
                         <div class="contact-item p-3">
                             <i class="fas fa-envelope fa-2x mb-3 opacity-75"></i>
                             <h5 class="fw-bold">Correo Electrónico</h5>
-                            <a href="mailto:{{ info.email }}" class="text-white text-decoration-none fw-light hover-underline">
+                            <a href="mailto:{{ info.email }}" class="text-dark text-decoration-none fw-light hover-underline">
                                 {{ info.email }}
                             </a>
                         </div>
@@ -112,11 +112,24 @@
 </div>
 
 <style>
-    .bg-light-success { background-color: #e8f5e9; }
-    .bg-light-info { background-color: #e1f5fe; }
+    /* Utilizando colores warning de Bootstrap (#ffc107) o ajustados para mejor contraste */
+    .text-warning { color: #ffc107 !important; } 
+    .bg-warning { background-color: #ffc107 !important; }
+    .text-warning-muted { color: #997404 !important; } /* Un tono más oscuro para legibilidad */
+    .border-warning { border-color: #ffc107 !important; }
+    .bg-light-warning { background-color: #fff3cd !important; }
+    
     .hover-card { transition: transform 0.3s ease; }
     .hover-card:hover { transform: translateY(-5px); }
     .hover-underline:hover { text-decoration: underline !important; }
+    
+    /* Ajuste de texto en fondo warning para asegurar legibilidad */
+    .bg-warning.text-dark h2, 
+    .bg-warning.text-dark p, 
+    .bg-warning.text-dark h5, 
+    .bg-warning.text-dark i {
+        color: #212529 !important; 
+    }
 </style>
 
 {% endblock %}

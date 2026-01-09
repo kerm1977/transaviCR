@@ -4,95 +4,94 @@
 {% block content %}
 
 <div class="row justify-content-center align-items-center" style="min-height: 80vh;">
-<div class="col-md-5">
-<div class="card p-4 shadow-lg border-0" style="border-radius: 20px;">
-<div class="text-center mb-4">
-<h1 class="h3 mb-3 fw-bold text-primary">Crear Cuenta</h1>
-<p class="text-muted">Únete a nuestra plataforma de transporte</p>
-</div>
-
-        <form action="{{ url_for('admin.register') }}" method="POST">
-            <!-- Nombre de Usuario -->
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-secondary">Nombre de Usuario</label>
-                <input type="text" name="username" class="form-control form-control-lg bg-light border-0" placeholder="Ej: JuanPerezCR" required>
+    <div class="col-md-5">
+        <div class="card p-4 shadow-lg border-0" style="border-radius: 20px;">
+            <div class="text-center mb-4">
+                <h1 class="h3 mb-3 fw-bold text-primary">Crear Cuenta</h1>
+                <p class="text-muted">Únete a nuestra plataforma de transporte</p>
             </div>
 
-            <!-- Correo Electrónico -->
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-secondary">Correo Electrónico</label>
-                <input type="email" name="email" class="form-control form-control-lg bg-light border-0" placeholder="correo@ejemplo.com" required>
-            </div>
-            
-            <!-- Contraseña con botón de visualización -->
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-secondary">Contraseña</label>
-                <div class="input-group shadow-sm">
-                    <input type="password" name="password" id="reg_password" class="form-control form-control-lg bg-light border-0" placeholder="••••••••" required>
-                    <button class="btn btn-light border-0 bg-light" type="button" onclick="togglePassword('reg_password', 'eye-1')">
-                        <i class="fas fa-eye text-muted" id="eye-1"></i>
-                    </button>
+            <!-- ACTUALIZADO: Action apunta a users.register -->
+            <form action="{{ url_for('users.register') }}" method="POST">
+                <!-- Nombre de Usuario -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-secondary">Nombre de Usuario</label>
+                    <input type="text" name="username" class="form-control form-control-lg bg-light border-0" placeholder="Ej: JuanPerezCR" required>
                 </div>
-            </div>
 
-            <!-- Confirmar Contraseña con botón de visualización -->
-            <div class="mb-3">
-                <label class="form-label fw-bold small text-secondary">Confirmar Contraseña</label>
-                <div class="input-group shadow-sm">
-                    <input type="password" name="confirm_password" id="confirm_password_field" class="form-control form-control-lg bg-light border-0" placeholder="••••••••" required>
-                    <button class="btn btn-light border-0 bg-light" type="button" onclick="togglePassword('confirm_password_field', 'eye-2')">
-                        <i class="fas fa-eye text-muted" id="eye-2"></i>
-                    </button>
+                <!-- Correo Electrónico -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-secondary">Correo Electrónico</label>
+                    <input type="email" name="email" class="form-control form-control-lg bg-light border-0" placeholder="correo@ejemplo.com" required>
                 </div>
-            </div>
+                
+                <!-- Contraseña con botón de visualización -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-secondary">Contraseña</label>
+                    <div class="input-group shadow-sm">
+                        <input type="password" name="password" id="reg_password" class="form-control form-control-lg bg-light border-0" placeholder="••••••••" required>
+                        <button class="btn btn-light border-0 bg-light" type="button" onclick="togglePassword('reg_password', 'eye-1')">
+                            <i class="fas fa-eye text-muted" id="eye-1"></i>
+                        </button>
+                    </div>
+                </div>
 
-            <!-- Selección de Tipo de Cuenta -->
-            <div class="mb-4">
-                <label class="form-label fw-bold small text-secondary">Tipo de Cuenta</label>
-                <select name="role" class="form-select form-select-lg bg-light border-0">
-                    <option value="user">Cliente / Solicitante</option>
-                    <option value="enterprise">Empresa de Transporte</option>
-                </select>
-            </div>
+                <!-- Confirmar Contraseña con botón de visualización -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-secondary">Confirmar Contraseña</label>
+                    <div class="input-group shadow-sm">
+                        <input type="password" name="confirm_password" id="confirm_password_field" class="form-control form-control-lg bg-light border-0" placeholder="••••••••" required>
+                        <button class="btn btn-light border-0 bg-light" type="button" onclick="togglePassword('confirm_password_field', 'eye-2')">
+                            <i class="fas fa-eye text-muted" id="eye-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Selección de Tipo de Cuenta -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold small text-secondary">Tipo de Cuenta</label>
+                    <select name="role" class="form-select form-select-lg bg-light border-0">
+                        <option value="user">Cliente / Solicitante</option>
+                        <option value="enterprise">Empresa de Transporte</option>
+                    </select>
+                </div>
+                
+                <!-- Botón de Envío -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold btn-rounded py-3 shadow">Registrarse Ahora</button>
+                </div>
+            </form>
             
-            <!-- Botón de Envío -->
-            <div class="d-grid">
-                <button type="submit" class="btn btn-primary btn-lg fw-bold btn-rounded py-3 shadow">Registrarse Ahora</button>
+            <div class="text-center mt-4">
+                <!-- ACTUALIZADO: Link a users.login -->
+                <p class="small text-muted">¿Ya tienes una cuenta? <a href="{{ url_for('users.login') }}" class="text-primary fw-bold text-decoration-none">Inicia sesión</a></p>
+                <hr>
+                <a href="/" class="text-decoration-none text-muted small">← Volver al Inicio</a>
             </div>
-        </form>
-        
-        <div class="text-center mt-4">
-            <p class="small text-muted">¿Ya tienes una cuenta? <a href="{{ url_for('admin.login') }}" class="text-primary fw-bold text-decoration-none">Inicia sesión</a></p>
-            <hr>
-            <a href="/" class="text-decoration-none text-muted small">← Volver al Inicio</a>
         </div>
     </div>
 </div>
 
-
-</div>
-
 <script>
-/**
+    /**
+     * Alterna la visibilidad entre contraseña y texto plano
+     */
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.getElementById(iconId);
 
-Alterna la visibilidad entre contraseña y texto plano
-*/
-function togglePassword(inputId, iconId) {
-const input = document.getElementById(inputId);
-const icon = document.getElementById(iconId);
-
-if (input && icon) {
-if (input.type === 'password') {
-input.type = 'text';
-icon.classList.remove('fa-eye');
-icon.classList.add('fa-eye-slash');
-} else {
-input.type = 'password';
-icon.classList.remove('fa-eye-slash');
-icon.classList.add('fa-eye');
-}
-}
-}
+        if (input && icon) {
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    }
 </script>
 
 {% endblock %}
