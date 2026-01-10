@@ -5,7 +5,7 @@
     <div class="d-flex gap-2">
         <span class="badge bg-primary p-2 rounded-pill align-self-center">Sesión: {{ session['role']|upper }}</span>
         
-        <!-- BOTÓN NUEVO: Gestión de Usuarios (Solo Admins) -->
+        <!-- BOTÓN DE GESTIÓN DE USUARIOS (Solo Admins) -->
         {% if session['role'] == 'admin' %}
         <a href="{{ url_for('users.manage_users') }}" class="btn btn-dark btn-sm rounded-pill shadow-sm">
             <i class="fas fa-users-cog me-1"></i> Usuarios
@@ -36,7 +36,6 @@
             <h2 class="fw-bold m-0">{{ stats.colabs_count }}</h2>
         </div>
     </div>
-    <!-- Tarjeta extra para completar el grid -->
     <div class="col-6 col-md-3">
         <div class="card p-3 shadow-sm border-0 h-100 bg-light">
             <h6 class="text-muted small fw-bold">ACCESO RÁPIDO</h6>
@@ -47,7 +46,7 @@
     </div>
 </div>
 
-<!-- Resto del Dashboard (Pestañas y Tablas) -->
+<!-- Pestañas de Navegación -->
 <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
     <li class="nav-item" role="presentation">
         <button class="nav-link active fw-bold" id="res-tab" data-bs-toggle="tab" data-bs-target="#reservas" type="button" role="tab">Reservas</button>
@@ -74,11 +73,11 @@
                         <thead class="bg-light">
                             <tr>
                                 <th class="ps-3">ID</th>
-                                <th>Cliente / PIN</th> <!-- Actualizado Título -->
+                                <th>Cliente / PIN</th>
                                 <th>Servicio</th>
                                 <th>Fecha</th>
                                 <th>Estado</th>
-                                <th class="text-end pe-3">Acciones</th>
+                                <th class="text-end pe-4" style="min-width: 180px;">Acciones</th> <!-- Más ancho para acciones -->
                             </tr>
                         </thead>
                         <tbody>
@@ -89,7 +88,6 @@
                                     {% if r.client %}
                                         <div class="fw-bold">{{ r.client.name }} {{ r.client.last_name1 }}</div>
                                         <div class="small text-muted mb-1">{{ r.client.phone }}</div>
-                                        <!-- VISUALIZACIÓN DEL PIN -->
                                         <span class="badge bg-warning text-dark border border-warning" title="PIN de Cliente">
                                             <i class="fas fa-key me-1"></i> {{ r.client.pin }}
                                         </span>
@@ -112,17 +110,36 @@
                                         <span class="badge bg-warning text-dark">Pendiente</span>
                                     {% elif r.status == 'Aprobada' %}
                                         <span class="badge bg-success">Aprobada</span>
+                                    {% elif r.status == 'Revisado' %}
+                                        <span class="badge bg-success"><i class="fas fa-check-double me-1"></i> Revisado</span>
                                     {% elif r.status == 'Cancelada' %}
                                         <span class="badge bg-danger">Cancelada</span>
                                     {% else %}
                                         <span class="badge bg-secondary">{{ r.status }}</span>
                                     {% endif %}
                                 </td>
+                                
+                                <!-- COLUMNA ACCIONES MEJORADA -->
                                 <td class="text-end pe-3">
-                                    <form action="{{ url_for('main.update_status', id=r.id, new_status='Aprobada') }}" method="POST" class="d-inline">
-                                        <button class="btn btn-sm btn-outline-success" title="Aprobar"><i class="fas fa-check"></i></button>
-                                    </form>
-                                    <button onclick="confirmDeletion('res', {{ r.id }})" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fas fa-trash"></i></button>
+                                    <div class="d-flex gap-3 justify-content-end align-items-center">
+                                        
+                                        <!-- Botón Aprobar (Verde y Grande) - Solo si no está aprobada/cancelada -->
+                                        {% if r.status == 'Pendiente' or r.status == 'Revisado' %}
+                                            <form action="{{ url_for('main.update_status', id=r.id, new_status='Aprobada') }}" method="POST">
+                                                <button class="btn btn-sm btn-success px-3 rounded-pill fw-bold shadow-sm" title="Aprobar Solicitud">
+                                                    <i class="fas fa-check me-1"></i> Aprobar
+                                                </button>
+                                            </form>
+                                        {% endif %}
+
+                                        <!-- Separador Vertical -->
+                                        <div class="vr text-muted opacity-25"></div>
+
+                                        <!-- Botón Eliminar (Rojo y Discreto) - Separado -->
+                                        <button onclick="confirmDeletion('res', {{ r.id }})" class="btn btn-sm btn-outline-danger border-0 rounded-circle p-2" title="Eliminar Registro">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}
