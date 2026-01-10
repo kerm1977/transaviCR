@@ -1,263 +1,297 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-chart-line text-primary"></i> Panel de Administración</h2>
-    <div>
-        <span class="badge bg-primary p-2 rounded-pill">Sesión: {{ session['role'] }}</span>
-        <a href="/logout" class="btn btn-outline-danger btn-sm ms-2 rounded-pill">Cerrar Sesión</a>
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
+    <h2 class="mb-3 mb-md-0"><i class="fas fa-chart-line text-primary"></i> Panel de Administración</h2>
+    <div class="d-flex gap-2">
+        <span class="badge bg-primary p-2 rounded-pill align-self-center">Sesión: {{ session['role']|upper }}</span>
+        
+        <!-- BOTÓN NUEVO: Gestión de Usuarios (Solo Admins) -->
+        {% if session['role'] == 'admin' %}
+        <a href="{{ url_for('users.manage_users') }}" class="btn btn-dark btn-sm rounded-pill shadow-sm">
+            <i class="fas fa-users-cog me-1"></i> Usuarios
+        </a>
+        {% endif %}
+        
+        <a href="/logout" class="btn btn-outline-danger btn-sm rounded-pill">Cerrar Sesión</a>
     </div>
 </div>
 
 <!-- Estadísticas Principales -->
 <div class="row mb-4 g-3 text-center">
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #0d6efd !important;">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 h-100" style="border-left: 5px solid #0d6efd !important;">
             <h6 class="text-muted small fw-bold">SOLICITUDES</h6>
             <h2 class="fw-bold m-0">{{ stats.reservations_count }}</h2>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #198754 !important;">
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 h-100" style="border-left: 5px solid #198754 !important;">
             <h6 class="text-muted small fw-bold">USUARIOS</h6>
             <h2 class="fw-bold m-0">{{ stats.users_count }}</h2>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #0dcaf0 !important;">
-            <h6 class="text-muted small fw-bold">COLABORADORES</h6>
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 h-100" style="border-left: 5px solid #ffc107 !important;">
+            <h6 class="text-muted small fw-bold">CHOFERES</h6>
             <h2 class="fw-bold m-0">{{ stats.colabs_count }}</h2>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card p-3 shadow-sm border-0" style="border-left: 5px solid #ffc107 !important;">
-            <h6 class="text-muted small fw-bold">WHATSAPP ADMIN</h6>
-            <h5 class="fw-bold m-0">{{ about.mobile_admin if about else 'S/N' }}</h5>
+    <!-- Tarjeta extra para completar el grid -->
+    <div class="col-6 col-md-3">
+        <div class="card p-3 shadow-sm border-0 h-100 bg-light">
+            <h6 class="text-muted small fw-bold">ACCESO RÁPIDO</h6>
+            <div class="d-grid mt-1">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#whatsappModal">Config. WhatsApp</button>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- Notificaciones y Lista de Reservas -->
-    <div class="col-lg-8">
-        <div class="card p-4 shadow-sm border-0 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4><i class="fas fa-bell text-warning"></i> Área de Notificaciones</h4>
-                <a href="/dashboard/export" class="btn btn-dark btn-sm rounded-pill">Exportar a TXT</a>
-            </div>
-            
-            <div class="alert alert-info py-2 small d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-info-circle"></i> Tienes {{ stats.reservations_count }} solicitudes totales en el sistema.</span>
-                <span id="notifCount" class="badge bg-danger rounded-pill d-none">Nuevos cambios</span>
-            </div>
-            
-            <div class="table-responsive mt-3">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Cliente / Destino</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in reservas %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold">{{ r.origin }} → {{ r.destination }}</div>
-                                <div class="small text-muted">{{ r.service_category }}</div>
-                            </td>
-                            <td class="small">{{ r.date }}<br>{{ r.departure_time }}</td>
-                            <td>
-                                <span class="badge {% if r.status == 'Pendiente' %}bg-warning{% elif r.status == 'Aprobada' %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
-                                    {{ r.status }}
-                                </span>
-                            </td>
-                            <td>
-                                <div class="btn-group">
-                                    <form action="/dashboard/update_status/{{r.id}}/Aprobada" method="POST">
-                                        <button class="btn btn-sm btn-outline-success"><i class="fas fa-check"></i></button>
+<!-- Resto del Dashboard (Pestañas y Tablas) -->
+<ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active fw-bold" id="res-tab" data-bs-toggle="tab" data-bs-target="#reservas" type="button" role="tab">Reservas</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link fw-bold" id="flota-tab" data-bs-toggle="tab" data-bs-target="#flota" type="button" role="tab">Flota y Choferes</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="adminTabsContent">
+    
+    <!-- TAB RESERVAS -->
+    <div class="tab-pane fade show active" id="reservas" role="tabpanel">
+        <div class="d-flex justify-content-end mb-3">
+            <a href="{{ url_for('main.export_data') }}" class="btn btn-success btn-sm rounded-pill shadow-sm">
+                <i class="fas fa-file-export me-1"></i> Exportar Reporte
+            </a>
+        </div>
+        
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-3">ID</th>
+                                <th>Cliente / PIN</th> <!-- Actualizado Título -->
+                                <th>Servicio</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th class="text-end pe-3">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in reservas %}
+                            <tr>
+                                <td class="ps-3 fw-bold">#{{ r.id }}</td>
+                                <td>
+                                    {% if r.client %}
+                                        <div class="fw-bold">{{ r.client.name }} {{ r.client.last_name1 }}</div>
+                                        <div class="small text-muted mb-1">{{ r.client.phone }}</div>
+                                        <!-- VISUALIZACIÓN DEL PIN -->
+                                        <span class="badge bg-warning text-dark border border-warning" title="PIN de Cliente">
+                                            <i class="fas fa-key me-1"></i> {{ r.client.pin }}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">Sin Cliente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ r.service_category }}</span>
+                                    {% if r.service_category == 'Viajes Internacionales' %}
+                                        <div class="small text-primary mt-1">{{ r.country }}</div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ r.date }}<br>
+                                    <small class="text-muted">{{ r.departure_time }}</small>
+                                </td>
+                                <td>
+                                    {% if r.status == 'Pendiente' %}
+                                        <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% elif r.status == 'Aprobada' %}
+                                        <span class="badge bg-success">Aprobada</span>
+                                    {% elif r.status == 'Cancelada' %}
+                                        <span class="badge bg-danger">Cancelada</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ r.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-3">
+                                    <form action="{{ url_for('main.update_status', id=r.id, new_status='Aprobada') }}" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-success" title="Aprobar"><i class="fas fa-check"></i></button>
                                     </form>
-                                    <button class="btn btn-sm btn-outline-danger ms-1" onclick="confirmDeletion('res', {{r.id}})">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                    <button onclick="confirmDeletion('res', {{ r.id }})" class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Gestión de Colaboradores y WhatsApp -->
-    <div class="col-lg-4">
-        <!-- Agregar Logo y Configuración WhatsApp -->
-        <div class="card p-4 shadow-sm border-0 mb-4 border-start border-success border-4">
-            <h5 class="text-success"><i class="fab fa-whatsapp"></i> Configuración</h5>
-            <form action="/dashboard/update_whatsapp" method="POST">
-                <div class="mb-3">
-                    <label class="form-label small">Movil Administración</label>
-                    <input type="text" name="mobile_admin" class="form-control form-control-sm" value="{{ about.mobile_admin if about else '' }}" maxlength="8">
-                </div>
-                <div class="mb-3">
-                    <label class="form-label small">Movil Servicio al Cliente</label>
-                    <input type="text" name="mobile_service" class="form-control form-control-sm" value="{{ about.mobile_service if about else '' }}" maxlength="8">
-                </div>
-                <button type="submit" class="btn btn-success btn-sm w-100 rounded-pill">Guardar Teléfonos</button>
-            </form>
-            <hr>
-            <a href="/aboutus/create" class="btn btn-outline-primary btn-sm w-100 rounded-pill">Configurar AboutUs / Logo</a>
+    <!-- TAB FLOTA -->
+    <div class="tab-pane fade" id="flota" role="tabpanel">
+        <div class="d-flex justify-content-end mb-3">
+            <button class="btn btn-primary btn-sm rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#addColabModal">
+                <i class="fas fa-plus me-1"></i> Nuevo Colaborador
+            </button>
         </div>
-
-        <!-- Lista rápida de Colaboradores -->
-        <div class="card p-4 shadow-sm border-0">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5><i class="fas fa-users text-primary"></i> Colaboradores</h5>
-                <button class="btn btn-primary btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#addColabModal">+</button>
-            </div>
-            <div class="list-group list-group-flush">
-                {% for c in colabs %}
-                <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                    <div class="small">
-                        <div class="fw-bold">{{ c.name }} {{ c.last_name1 }}</div>
-                        <div class="text-muted">{{ c.mobile }}</div>
+        
+        <div class="row g-4">
+            {% for c in colabs %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm border-0 hover-card">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            {% if c.photo %}
+                                <img src="{{ url_for('static', filename=c.photo) }}" class="rounded-circle shadow-sm" style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem;">
+                                    {{ c.name[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <h5 class="fw-bold">{{ c.name }} {{ c.last_name1 }}</h5>
+                        <p class="text-muted small mb-2">{{ c.license_type }} | {{ c.ownership }}</p>
+                        
+                        <div class="bg-light p-2 rounded mb-3">
+                            <small class="d-block fw-bold text-start ps-2 mb-1">Unidades Asignadas:</small>
+                            {% for bus in c.buses %}
+                                <div class="d-flex justify-content-between px-2 small text-muted border-bottom py-1">
+                                    <span>{{ bus.brand }}</span>
+                                    <span class="fw-bold">{{ bus.plate }}</span>
+                                </div>
+                            {% else %}
+                                <small class="text-muted fst-italic">Sin unidades registradas</small>
+                            {% endfor %}
+                        </div>
+                        
+                        <button onclick="confirmDeletion('colab', {{ c.id }})" class="btn btn-outline-danger btn-sm w-100 rounded-pill">Eliminar Registro</button>
                     </div>
-                    <button class="btn btn-sm text-danger" onclick="confirmDeletion('colab', {{c.id}})"><i class="fas fa-trash-alt"></i></button>
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- Modal Agregar Colaborador (Formulario Completo) -->
+<!-- Modal Agregar Colaborador -->
 <div class="modal fade" id="addColabModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
-            <form action="/colaboradores/add" method="POST" enctype="multipart/form-data">
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Registrar Nuevo Colaborador</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold small">Foto del Colaborador(a)</label>
-                            <input type="file" name="photo" class="form-control bg-light">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Nombre</label>
-                            <input type="text" name="name" class="form-control" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Primer Apellido</label>
-                            <input type="text" name="last_name1" class="form-control" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Segundo Apellido</label>
-                            <input type="text" name="last_name2" class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Teléfono Fijo</label>
-                            <input type="text" name="phone_fixed" class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Movil</label>
-                            <input type="text" name="mobile" class="form-control" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label small">Email</label>
-                            <input type="email" name="email" class="form-control">
-                        </div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Registrar Colaborador y Flota</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ url_for('main.add_colab') }}" method="POST" enctype="multipart/form-data">
+                    <!-- Datos Personales -->
+                    <h6 class="text-primary fw-bold mb-3">Datos del Conductor</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4"><input type="text" name="name" class="form-control" placeholder="Nombre" required></div>
+                        <div class="col-md-4"><input type="text" name="last_name1" class="form-control" placeholder="1er Apellido" required></div>
+                        <div class="col-md-4"><input type="text" name="last_name2" class="form-control" placeholder="2do Apellido"></div>
+                        <div class="col-md-6"><input type="tel" name="mobile" class="form-control" placeholder="Celular" required></div>
+                        <div class="col-md-6"><input type="email" name="email" class="form-control" placeholder="Email"></div>
                         <div class="col-md-6">
-                            <label class="form-label small fw-bold text-primary">Licencia (Costa Rica)</label>
                             <select name="license" class="form-select">
-                                <option>B1</option><option>B2</option><option>B3</option><option>B4</option>
-                                <option>C1</option><option selected>C2 (Busetas/Buses)</option>
+                                <option value="B1">Licencia B1</option>
+                                <option value="B2">Licencia B2</option>
+                                <option value="C2">Licencia C2 (Bus)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small">Cuenta con Buseta</label>
                             <select name="ownership" class="form-select">
-                                <option value="Propia">Propia</option>
-                                <option value="Alquilada">Alquilada</option>
+                                <option value="Propio">Vehículo Propio</option>
+                                <option value="Chofer">Solo Chofer</option>
                             </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">Foto del Conductor</label>
+                            <input type="file" name="photo" class="form-control">
                         </div>
                     </div>
 
-                    <hr class="my-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold m-0"><i class="fas fa-bus text-primary"></i> Información de Unidades</h6>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addNewBusField()">+ Agregar Buseta</button>
-                    </div>
-
+                    <!-- Datos del Bus (Dinámico) -->
+                    <h6 class="text-primary fw-bold mb-3 d-flex justify-content-between">
+                        Unidades de Transporte
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addNewBusField()">+ Agregar Otro Bus</button>
+                    </h6>
                     <div id="busFieldsContainer">
-                        <div class="bus-entry border p-3 rounded mb-3 bg-light">
+                        <!-- Primer Bus (Default) -->
+                        <div class="bus-item bg-light p-3 rounded mb-3 border">
                             <div class="row g-2">
-                                <div class="col-md-3">
-                                    <label class="small">Marca</label>
-                                    <input type="text" name="brand_0" class="form-control form-control-sm" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="small">Placa</label>
-                                    <input type="text" name="plate_0" class="form-control form-control-sm" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="small">Año</label>
-                                    <input type="number" name="year_0" class="form-control form-control-sm" min="1990" max="2026" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="small">Capacidad (8-50)</label>
-                                    <input type="number" name="capacity_0" class="form-control form-control-sm" min="8" max="50" required>
-                                </div>
-                                <div class="col-md-12 mt-2">
-                                    <label class="small">Servicios</label>
-                                    <select name="services_0" class="form-select form-select-sm">
-                                        <option>Transporte Estudiantes</option>
-                                        <option>Servicios Especiales</option>
-                                        <option>Ambos</option>
-                                    </select>
-                                </div>
+                                <div class="col-md-4"><input type="text" name="brand_0" class="form-control form-control-sm" placeholder="Marca (Toyota, etc)"></div>
+                                <div class="col-md-4"><input type="text" name="plate_0" class="form-control form-control-sm" placeholder="Placa"></div>
+                                <div class="col-md-4"><input type="number" name="year_0" class="form-control form-control-sm" placeholder="Año"></div>
+                                <div class="col-md-6"><input type="number" name="capacity_0" class="form-control form-control-sm" placeholder="Capacidad"></div>
+                                <div class="col-md-6"><input type="text" name="services_0" class="form-control form-control-sm" placeholder="Tipo (Turismo, Estudiantes)"></div>
                             </div>
                         </div>
                     </div>
                     <input type="hidden" name="bus_count" id="bus_count_input" value="1">
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="submit" class="btn btn-primary px-4 rounded-pill">Guardar Todo</button>
-                </div>
-            </form>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary">Guardar Todo</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Modal Eraser (Borrado Seguro) -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title fw-bold">⚠️ ELIMINACIÓN SEGURA</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+<!-- Modal Configuración WhatsApp -->
+<div class="modal fade" id="whatsappModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h6 class="modal-title fw-bold">Configurar WhatsApp</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <div class="modal-body">
+                <form action="{{ url_for('main.update_whatsapp') }}" method="POST">
+                    <div class="mb-2">
+                        <label class="small text-muted">Admin (Recibe Solicitudes)</label>
+                        <input type="text" name="mobile_admin" class="form-control" value="{{ about.mobile_admin if about else '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="small text-muted">Servicio al Cliente (Perfil)</label>
+                        <input type="text" name="mobile_service" class="form-control" value="{{ about.mobile_service if about else '' }}">
+                    </div>
+                    <button type="submit" class="btn btn-dark btn-sm w-100">Guardar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmación Borrado -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
             <div class="modal-body text-center p-4">
-                <div id="step1">
-                    <p class="fs-5">¿Deseas eliminar este registro del sistema?</p>
-                    <button class="btn btn-warning w-100 rounded-pill" onclick="showStep(2)">Sí, continuar</button>
-                </div>
-                <div id="step2" class="d-none">
-                    <p class="text-danger fw-bold fs-5">¡ACCIÓN IRREVERSIBLE!</p>
-                    <p>Se perderán todos los datos vinculados.</p>
-                    <button class="btn btn-danger w-100 rounded-pill" onclick="showStep(3)">Confirmar segunda vez</button>
-                </div>
-                <div id="step3" class="d-none">
-                    <p>Escribe <strong>BORRAR</strong> para confirmar:</p>
-                    <input type="text" id="confirmInput" class="form-control text-center mb-3">
-                    <form id="deleteForm" method="POST">
-                        <button type="button" class="btn btn-dark w-100 rounded-pill" onclick="finalDelete()">ELIMINAR DEFINITIVAMENTE</button>
-                    </form>
-                </div>
+                <i class="fas fa-exclamation-circle text-danger fa-3x mb-3"></i>
+                <h5 class="fw-bold">¿Eliminar Registro?</h5>
+                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+                
+                <form id="deleteForm" method="POST" action="">
+                    <!-- Paso 1: Botones -->
+                    <div id="step1" class="d-grid gap-2">
+                        <button type="button" class="btn btn-danger" onclick="showStep(2)">Sí, Eliminar</button>
+                        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+                    </div>
+                    
+                    <!-- Paso 2: Confirmación Extra -->
+                    <div id="step2" class="d-none">
+                        <p class="small text-danger fw-bold">Escribe "BORRAR" para confirmar:</p>
+                        <input type="text" id="confirmInput" class="form-control mb-3 text-center" onkeyup="this.value = this.value.toUpperCase()">
+                        <button type="button" onclick="finalDelete()" class="btn btn-danger w-100">CONFIRMAR</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -266,17 +300,17 @@
 <script>
     let busCount = 1;
     function addNewBusField() {
-        if(busCount >= 10) return alert("Máximo 10 unidades");
         const container = document.getElementById('busFieldsContainer');
         const div = document.createElement('div');
-        div.className = "bus-entry border p-3 rounded mb-3 bg-light";
+        div.className = 'bus-item bg-light p-3 rounded mb-3 border position-relative';
         div.innerHTML = `
+            <button type="button" class="btn-close position-absolute top-0 end-0 m-2" onclick="this.parentElement.remove()" aria-label="Close"></button>
             <div class="row g-2">
-                <div class="col-md-3"><label class="small">Marca</label><input type="text" name="brand_${busCount}" class="form-control form-control-sm" required></div>
-                <div class="col-md-3"><label class="small">Placa</label><input type="text" name="plate_${busCount}" class="form-control form-control-sm" required></div>
-                <div class="col-md-3"><label class="small">Año</label><input type="number" name="year_${busCount}" class="form-control form-control-sm" required></div>
-                <div class="col-md-3"><label class="small">Capacidad</label><input type="number" name="capacity_${busCount}" class="form-control form-control-sm" required></div>
-                <div class="col-md-12 mt-2"><label class="small">Servicios</label><select name="services_${busCount}" class="form-select form-select-sm"><option>Transporte Estudiantes</option><option>Servicios Especiales</option><option>Ambos</option></select></div>
+                <div class="col-md-4"><input type="text" name="brand_${busCount}" class="form-control form-control-sm" placeholder="Marca"></div>
+                <div class="col-md-4"><input type="text" name="plate_${busCount}" class="form-control form-control-sm" placeholder="Placa"></div>
+                <div class="col-md-4"><input type="number" name="year_${busCount}" class="form-control form-control-sm" placeholder="Año"></div>
+                <div class="col-md-6"><input type="number" name="capacity_${busCount}" class="form-control form-control-sm" placeholder="Capacidad"></div>
+                <div class="col-md-6"><input type="text" name="services_${busCount}" class="form-control form-control-sm" placeholder="Tipo"></div>
             </div>`;
         container.appendChild(div);
         busCount++;
@@ -290,28 +324,17 @@
     }
 
     function showStep(s) {
-        [1,2,3].forEach(n => document.getElementById(`step${n}`).classList.add('d-none'));
+        document.getElementById('step1').classList.add('d-none');
+        document.getElementById('step2').classList.add('d-none');
         document.getElementById(`step${s}`).classList.remove('d-none');
     }
 
     function finalDelete() {
-        if(document.getElementById('confirmInput').value === 'BORRAR') document.getElementById('deleteForm').submit();
-        else alert("Debes escribir BORRAR");
-    }
-
-    // --- NUEVO: SISTEMA DE NOTIFICACIONES ---
-    function checkUpdates() {
-        // En un entorno real, aquí harías fetch('/api/check_updates')
-        // Por ahora, simulamos una alerta visual si hay cambios (puedes ajustar esta lógica)
-        const badge = document.getElementById('notifCount');
-        if (badge) {
-            // Animación simple para llamar la atención
-            badge.classList.add('animate__animated', 'animate__pulse');
-            setTimeout(() => badge.classList.remove('animate__animated', 'animate__pulse'), 1000);
+        if(document.getElementById('confirmInput').value === 'BORRAR') {
+            document.getElementById('deleteForm').submit();
+        } else {
+            alert("Debes escribir BORRAR correctamente.");
         }
     }
-    
-    // Revisar actualizaciones cada 30 segundos
-    setInterval(checkUpdates, 30000);
 </script>
 {% endblock %}

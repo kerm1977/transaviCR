@@ -82,10 +82,24 @@
                 <!-- 1. SECCIÓN DATOS PERSONALES -->
                 <div class="bg-light p-4 rounded mb-4 border border-1">
                     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3">
-                        <h5 class="fw-bold text-primary m-0 mb-3 mb-lg-0">DATOS PERSONALES</h5>
+                        <div>
+                            <h5 class="fw-bold text-primary m-0">DATOS PERSONALES</h5>
+                            <!-- Pregunta de olvido de PIN -->
+                            <div class="mt-2 text-muted x-small">
+                                <span class="me-2">¿Olvidó su PIN?</span>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="forgot_pin_opt" id="forgot_yes" onclick="openRecoverModal()">
+                                    <label class="form-check-label text-dark fw-bold cursor-pointer" for="forgot_yes">Sí</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="forgot_pin_opt" id="forgot_no" checked>
+                                    <label class="form-check-label text-dark cursor-pointer" for="forgot_no">No</label>
+                                </div>
+                            </div>
+                        </div>
                         
                         <!-- Input Group PIN -->
-                        <div class="input-group input-group-sm w-100 w-lg-auto">
+                        <div class="input-group input-group-sm w-100 w-lg-auto mt-3 mt-lg-0">
                             <span class="input-group-text bg-warning fw-bold text-dark">PIN</span>
                             <input type="text" id="client_pin" form="formEstandar" name="client_pin" class="form-control" placeholder="¿Ya tienes PIN?" maxlength="8" style="text-transform: uppercase;">
                             <button type="button" class="btn btn-dark" onclick="fetchClientData()">Cargar</button>
@@ -93,6 +107,7 @@
                     </div>
                     
                     <div class="row g-3">
+                        <!-- Campos de Nombre y Contacto -->
                         <div class="col-md-4">
                             <label class="form-label small fw-bold">Nombre <span class="text-danger">*</span></label>
                             <input type="text" id="client_name" form="formEstandar" name="client_name" class="form-control strict-name" placeholder="Tu Nombre" required>
@@ -301,7 +316,7 @@
     </div>
 </div>
 
-<!-- ================= MODAL DE ÉXITO (PIN) ================= -->
+<!-- ================= MODAL DE ÉXITO (NUEVO REGISTRO) ================= -->
 <div class="modal fade" id="pinSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content text-center border-0 shadow-lg p-3">
@@ -315,19 +330,54 @@
                     </div>
                 </div>
                 <h3 class="fw-bold text-dark mb-2">¡Registro Exitoso!</h3>
-                
                 <div class="bg-light p-3 rounded-3 border border-2 border-primary border-dashed mb-3 mt-3">
                     <small class="text-muted text-uppercase fw-bold mb-2 d-block">TU PIN DE CLIENTE FRECUENTE</small>
                     <h1 class="display-4 fw-bold text-primary mb-0 letter-spacing-3" id="modalPinValue">--------</h1>
                 </div>
-
                 <p class="text-muted mb-4 px-2">
                     <i class="fas fa-info-circle text-primary me-1"></i> Este es tu PIN. <strong>Guárdalo</strong> para seguir solicitando tus viajes y no tengas que volver a ingresar tus datos personales.
                 </p>
-                
                 <button type="button" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm w-100" data-bs-dismiss="modal">
                     ¡Entendido, gracias!
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL DE RECUPERACIÓN DE PIN ================= -->
+<div class="modal fade" id="recoverPinModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg p-3">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-primary">Recuperar PIN</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="resetForgotRadio()"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">Ingresa tu número de teléfono y correo electrónico registrados para recuperar tu PIN.</p>
+                
+                <div id="recoverAlert" class="alert d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Teléfono</label>
+                    <input type="tel" id="rec_phone" class="form-control strict-phone" placeholder="88888888" maxlength="8">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Correo Electrónico</label>
+                    <input type="email" id="rec_email" class="form-control" placeholder="nombre@correo.com">
+                </div>
+                
+                <!-- Resultado exitoso oculto por defecto -->
+                <div id="recoverResult" class="text-center bg-light-warning p-3 rounded border border-warning d-none mb-3">
+                    <p class="text-dark fw-bold mb-1">¡Hola <span id="rec_name"></span>!</p>
+                    <p class="mb-1 text-muted small">Tu PIN es:</p>
+                    <h2 class="text-primary fw-bold letter-spacing-3" id="rec_pin_value">--------</h2>
+                    <button class="btn btn-sm btn-outline-dark mt-2" onclick="useRecoveredPin()">Usar PIN ahora</button>
+                </div>
+
+                <div class="d-grid">
+                    <button type="button" class="btn btn-dark rounded-pill" onclick="submitRecovery()">Buscar PIN</button>
+                </div>
             </div>
         </div>
     </div>
@@ -353,13 +403,13 @@
     .border-dashed { border-style: dashed !important; }
     .letter-spacing-3 { letter-spacing: 3px; }
 
-    @media (max-width: 991px) { /* Hasta LG */
+    @media (max-width: 991px) {
         .responsive-icon { font-size: 1.5rem !important; }
         .icon-flat { width: 45px !important; height: 45px !important; }
         .responsive-text { font-size: 0.8rem !important; line-height: 1.2; }
     }
     
-    @media (min-width: 992px) { /* PC grande */
+    @media (min-width: 992px) {
         .responsive-icon { font-size: 2em !important; }
         .icon-flat { width: 60px !important; height: 60px !important; }
         .responsive-text { font-size: 0.9rem !important; }
@@ -371,35 +421,83 @@
     const adminWhatsApp = "{{ about.mobile_admin if about and about.mobile_admin else '00000000' }}";
 
     document.addEventListener("DOMContentLoaded", function() {
-        // --- DETECCIÓN DE PIN EN MENSAJES FLASH PARA EL MODAL ---
-        // Buscamos específicamente la categoría 'new_pin_modal' que enviamos desde el backend
+        // Detección de PIN nuevo para Modal de Éxito
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    // Verificamos la categoría exacta que pusimos en rutas.py
                     if ("{{ category }}" === "new_pin_modal") {
-                        // El mensaje es solo el PIN limpio
                         const pinValue = "{{ message }}";
                         document.getElementById('modalPinValue').textContent = pinValue;
-                        // Mostrar el Modal automáticamente usando Bootstrap
-                        const modalElement = document.getElementById('pinSuccessModal');
-                        if (modalElement) {
-                            const modal = new bootstrap.Modal(modalElement);
-                            modal.show();
-                        }
+                        new bootstrap.Modal(document.getElementById('pinSuccessModal')).show();
                     }
                 {% endfor %}
             {% endif %}
         {% endwith %}
         
-        // Inicializar
         selectService('estudiantes');
-        // Asegurar que solo los campos visibles estén activos
         const pinInput = document.getElementById('client_pin');
         if(pinInput) pinInput.disabled = false;
     });
 
-    // --- VALIDACIONES ESTRICTAS ---
+    // --- Lógica de Recuperación de PIN ---
+    function openRecoverModal() {
+        new bootstrap.Modal(document.getElementById('recoverPinModal')).show();
+    }
+
+    function resetForgotRadio() {
+        // Al cerrar el modal, volver el radio a "No"
+        document.getElementById('forgot_no').checked = true;
+    }
+
+    function submitRecovery() {
+        const phone = document.getElementById('rec_phone').value;
+        const email = document.getElementById('rec_email').value;
+        const alertBox = document.getElementById('recoverAlert');
+        const resultBox = document.getElementById('recoverResult');
+
+        alertBox.className = 'alert d-none';
+        resultBox.classList.add('d-none');
+
+        if(!phone || !email) {
+            alertBox.textContent = "Por favor completa ambos campos.";
+            alertBox.className = 'alert alert-danger';
+            alertBox.classList.remove('d-none');
+            return;
+        }
+
+        fetch('/api/recover_pin', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({phone: phone, email: email})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                document.getElementById('rec_name').textContent = data.name;
+                document.getElementById('rec_pin_value').textContent = data.pin;
+                resultBox.classList.remove('d-none');
+            } else {
+                alertBox.textContent = data.message;
+                alertBox.className = 'alert alert-danger';
+                alertBox.classList.remove('d-none');
+            }
+        })
+        .catch(err => console.error(err));
+    }
+
+    function useRecoveredPin() {
+        const recoveredPin = document.getElementById('rec_pin_value').textContent;
+        document.getElementById('client_pin').value = recoveredPin;
+        // Cerrar modal
+        const modalEl = document.getElementById('recoverPinModal');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        modal.hide();
+        resetForgotRadio();
+        // Cargar datos
+        fetchClientData();
+    }
+
+    // --- Validaciones Normales ---
     document.querySelectorAll('.strict-name').forEach(input => {
         input.addEventListener('input', function(e) {
             let val = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '');
@@ -407,11 +505,14 @@
             this.value = val;
         });
     });
-    document.querySelector('.strict-phone').addEventListener('input', function(e) {
-        this.value = this.value.replace(/[^0-9]/g, '');
+    
+    // Aplicar a todos los inputs de teléfono (incluyendo el de recuperación)
+    document.querySelectorAll('.strict-phone, input[type="tel"]').forEach(input => {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
     });
 
-    // --- PIN Autocompletar ---
     function fetchClientData() {
         const pin = document.getElementById('client_pin').value;
         if (pin.length < 8) return alert("El PIN debe tener 8 caracteres");
@@ -433,7 +534,6 @@
             .catch(err => console.error(err));
     }
 
-    // --- SELECCIÓN DE SERVICIO ---
     function selectService(serviceKey) {
         const container = document.getElementById('dynamicFormContainer');
         const formEstandar = document.getElementById('formEstandar');

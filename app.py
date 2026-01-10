@@ -17,46 +17,60 @@ def create_app():
     db.init_app(app)
     bcrypt.init_app(app)
 
-    # Registro de Blueprints para modularizar rutas
+    # Registro de Blueprints
     from rutas import main_bp
-    # CAMBIO: Importamos users_bp en lugar de admin_bp
     from users import users_bp
-    # Mantenemos el perfil que acabamos de crear
     from profile import profile_bp
     
     app.register_blueprint(main_bp)
-    app.register_blueprint(users_bp) # Registramos el nuevo blueprint de usuarios
-    app.register_blueprint(profile_bp) # Registramos el blueprint de perfil
+    app.register_blueprint(users_bp) 
+    app.register_blueprint(profile_bp)
 
     # Inicialización de la base de datos y datos maestros
     with app.app_context():
-        # Importamos modelos para asegurar que SQLAlchemy los reconozca al crear tablas
         import models
-        # CAMBIO: Importamos User desde users, no desde models
         from users import User
         
         db.create_all()
         
-        # Verificar si existe el administrador del sistema
-        if not User.query.filter_by(username='admin').first():
-            # Crear admin por defecto si no existe
-            hashed_pw = bcrypt.generate_password_hash('admin123').decode('utf-8')
+        # --- CONFIGURACIÓN DE SUPERUSUARIOS ---
+        # Lista de correos que serán administradores por defecto
+        # Se crean automáticamente al iniciar la app si no existen
+        superusers = [
+            {'email': 'kenth1977@gmail.com', 'username': 'Kenth SuperAdmin'},
+            {'email': 'lthikingcr@gmail.com', 'username': 'Lthiking SuperAdmin'}
+        ]
+        
+        # Contraseña por defecto para los superusuarios (¡Cámbiala al entrar!)
+        # Solicitada: CR129x7848n
+        default_password = 'CR129x7848n' 
+        hashed_pw = bcrypt.generate_password_hash(default_password).decode('utf-8')
+
+        for super_data in superusers:
+            user = User.query.filter_by(email=super_data['email']).first()
             
-            admin = User(
-                username='admin', 
-                email='admin@sistema.com', 
-                role='admin'
-            )
-            # Asignamos el password hasheado manualmente
-            admin.password = hashed_pw
-            
-            db.session.add(admin)
-            db.session.commit()
-            print("Usuario admin creado: admin / admin123")
+            if not user:
+                # Crear superusuario si no existe
+                new_admin = User(
+                    username=super_data['username'],
+                    email=super_data['email'],
+                    role='admin', # Rol privilegiado
+                    password=hashed_pw
+                )
+                db.session.add(new_admin)
+                print(f"Superusuario creado: {super_data['email']}")
+            else:
+                # Si existe, asegurar que tenga rol de admin y actualizar password si es necesario (opcional)
+                # Aquí solo forzamos el rol 'admin' para garantizar acceso
+                if user.role != 'admin':
+                    user.role = 'admin'
+                    print(f"Rol de {super_data['email']} actualizado a admin.")
+        
+        # Commit de cambios (creación o actualización de roles)
+        db.session.commit()
 
     return app
 
 if __name__ == '__main__':
     app = create_app()
-    # Se agrega el puerto 5000 explícitamente como solicitaste
     app.run(debug=True, port=5000)

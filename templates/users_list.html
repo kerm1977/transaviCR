@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <h4 class="m-0 fw-bold text-primary"><i class="fas fa-users-cog"></i> Gestión de Usuarios</h4>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Usuario</th>
+                                <th>Email</th>
+                                <th class="text-center">Rol Actual</th>
+                                <th class="text-center">Cambiar Rol</th>
+                                <th class="text-end pe-4">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users_list %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ user.username }}</td>
+                                <td class="text-muted">{{ user.email }}</td>
+                                <td class="text-center">
+                                    {% if user.role == 'admin' %}
+                                        <span class="badge bg-danger rounded-pill">Administrador</span>
+                                    {% elif user.role == 'enterprise' %}
+                                        <span class="badge bg-success rounded-pill">Empresa</span>
+                                    {% else %}
+                                        <span class="badge bg-info text-dark rounded-pill">Usuario</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <form action="{{ url_for('users.change_role', user_id=user.id) }}" method="POST" class="d-inline-flex align-items-center gap-2 justify-content-center">
+                                        <select name="new_role" class="form-select form-select-sm" style="width: auto;">
+                                            <option value="user" {% if user.role == 'user' %}selected{% endif %}>Usuario</option>
+                                            <option value="enterprise" {% if user.role == 'enterprise' %}selected{% endif %}>Empresa</option>
+                                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Guardar Rol">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <form action="{{ url_for('users.delete_user', user_id=user.id) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar a este usuario?');" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar Usuario">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">No hay usuarios registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

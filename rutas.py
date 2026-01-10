@@ -2,11 +2,12 @@
 import os
 import random
 import string
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, send_from_directory, current_app, session, jsonify
 from extensions import db
 # Importamos todos los modelos necesarios, incluyendo el nuevo Client
 from models import Collaborator, Bus, Reservation, AboutUs, Client
-# Importamos la seguridad desde users.py (antes admin.py)
+# Importamos la seguridad desde users.py
 from users import User, login_required
 from werkzeug.utils import secure_filename
 
@@ -39,8 +40,7 @@ def home():
 @main_bp.route('/api/get_client/<pin>', methods=['GET'])
 def get_client_info(pin):
     """
-    API JSON: Busca un cliente por su PIN.
-    Usado por el frontend para autocompletar el formulario.
+    API JSON: Busca un cliente por su PIN para autocompletar.
     """
     pin = pin.upper()
     client = Client.query.filter_by(pin=pin).first()
@@ -55,11 +55,31 @@ def get_client_info(pin):
         })
     return jsonify({'success': False})
 
+@main_bp.route('/api/recover_pin', methods=['POST'])
+def recover_pin():
+    """
+    API para recuperar el PIN validando teléfono y email.
+    """
+    data = request.get_json()
+    phone = data.get('phone')
+    email = data.get('email')
+    
+    if not phone or not email:
+        return jsonify({'success': False, 'message': 'Por favor ingrese ambos datos.'})
+    
+    # Buscar cliente que coincida exactamente con ambos datos
+    client = Client.query.filter_by(phone=phone, email=email).first()
+    
+    if client:
+        return jsonify({'success': True, 'pin': client.pin, 'name': client.name})
+    else:
+        return jsonify({'success': False, 'message': 'No encontramos un registro que coincida con ese Teléfono y Email.'})
+
 @main_bp.route('/reserve', methods=['POST'])
 def create_reservation():
     """
     Procesa el formulario de reserva.
-    Maneja tanto la creación/actualización del cliente como la reserva en sí.
+    Maneja validación de duplicados y creación de clientes.
     """
     # ---------------------------------------------------------
     # 1. GESTIÓN DEL CLIENTE (Datos Personales y PIN)
@@ -79,7 +99,7 @@ def create_reservation():
     phone = request.form.get('client_phone')
     email = request.form.get('client_email')
 
-    # Buscar si existe por PIN
+    # A. Intentar buscar si existe por PIN
     if pin_ingresado:
         client = Client.query.filter_by(pin=pin_ingresado).first()
     
@@ -91,7 +111,21 @@ def create_reservation():
         client.phone = phone
         client.email = email
     else:
-        # Si no existe, creamos uno nuevo con un PIN generado
+        # B. Intento de registro NUEVO -> VALIDAR DUPLICADOS
+        
+        # 1. Validar Teléfono existente
+        existing_phone = Client.query.filter_by(phone=phone).first()
+        if existing_phone:
+            flash(f"El número de teléfono {phone} ya está registrado. Por favor use la opción '¿Olvidó su PIN?'", "danger")
+            return redirect(url_for('main.home'))
+            
+        # 2. Validar Email existente
+        existing_email = Client.query.filter_by(email=email).first()
+        if existing_email:
+            flash(f"El correo electrónico {email} ya está registrado. Por favor use la opción '¿Olvidó su PIN?'", "danger")
+            return redirect(url_for('main.home'))
+
+        # Si no existen duplicados, creamos un nuevo cliente
         new_pin_generated = generate_pin()
         client = Client(
             pin=new_pin_generated,
@@ -162,12 +196,145 @@ def create_reservation():
     # Manejo de Mensajes y Modals
     if is_new_client and new_pin_generated:
         # Usamos una categoría especial 'new_pin_modal' para que el frontend lo detecte
-        # Esto disparará el Modal que diseñamos en home.html
         flash(f"{new_pin_generated}", "new_pin_modal") 
     else:
         flash("Solicitud enviada correctamente. Puedes ver el estado en la sección 'Mis Solicitudes' con tu PIN.", "success")
 
     return redirect(url_for('main.home'))
+
+# --- RUTA PARA CANCELAR RESERVA (CLIENTE) ---
+@main_bp.route('/cancel_reservation/<int:id>', methods=['POST'])
+def cancel_reservation(id):
+    """
+    Marca la reserva como 'Cancelada' y guarda la fecha/hora.
+    """
+    res = Reservation.query.get_or_404(id)
+    
+    # Solo permitimos cancelar si está pendiente
+    if res.status == 'Pendiente':
+        # Generar timestamp legible
+        now = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+        
+        res.status = 'Cancelada'
+        res.cancelled_at = now
+        
+        db.session.commit()
+        flash("Tu solicitud ha sido cancelada y registrada en tu historial.", "warning")
+    else:
+        flash("No se puede cancelar esta solicitud en su estado actual.", "danger")
+        
+    return redirect(url_for('main.home'))
+
+# --- RUTA PARA REVISAR RESERVA (ADMIN) ---
+@main_bp.route('/review_reservation/<int:id>', methods=['POST'])
+@login_required
+def review_reservation(id):
+    """
+    Permite al administrador marcar una solicitud como 'Revisado'.
+    """
+    # Verificar que sea admin
+    if session.get('role') != 'admin':
+        flash("No tienes permisos para realizar esta acción.", "danger")
+        return redirect(url_for('main.home'))
+
+    res = Reservation.query.get_or_404(id)
+    return_pin = request.form.get('return_pin') # Capturamos el PIN para volver a la misma pantalla
+
+    if res.status == 'Pendiente':
+        res.status = 'Revisado'
+        db.session.commit()
+        flash(f"Solicitud #{id} marcada como REVISADA.", "success")
+    
+    # Truco para volver a mostrar la vista de perfil del usuario sin que el admin tenga que buscarlo de nuevo
+    if return_pin:
+        client = Client.query.filter_by(pin=return_pin).first()
+        if client:
+            reservations = Reservation.query.filter_by(client_id=client.id).order_by(Reservation.id.desc()).all()
+            return render_template('perfil.html', client=client, reservations=reservations, pin=return_pin)
+    
+    return redirect(url_for('main.dashboard'))
+
+# --- RUTA PARA EDITAR RESERVA (CLIENTE) ---
+@main_bp.route('/edit_reservation/<int:id>', methods=['GET', 'POST'])
+def edit_reservation(id):
+    """
+    Permite al usuario modificar todos los datos de su solicitud si está Pendiente.
+    """
+    res = Reservation.query.get_or_404(id)
+    
+    # Validación: Solo editar si está pendiente
+    if res.status != 'Pendiente':
+        flash("Solo se pueden editar solicitudes que estén pendientes.", "warning")
+        if res.client:
+            return render_template('perfil.html', client=res.client, reservations=Reservation.query.filter_by(client_id=res.client.id).order_by(Reservation.id.desc()).all(), pin=res.client.pin)
+        return redirect(url_for('main.home'))
+
+    if request.method == 'POST':
+        # 1. Actualizar Datos del Cliente
+        if res.client:
+            res.client.name = request.form.get('client_name')
+            res.client.last_name1 = request.form.get('client_lastname1')
+            res.client.last_name2 = request.form.get('client_lastname2')
+            res.client.phone = request.form.get('client_phone')
+            res.client.email = request.form.get('client_email')
+
+        # 2. Actualizar Datos de Reserva
+        service_type = request.form.get('service_type')
+        res.service_category = service_type
+        
+        # Lógica de fechas según servicio
+        if service_type == 'Viajes Internacionales':
+            res.date = request.form.get('int_departure_date')
+            res.destination = request.form.get('int_description') # Descripción en internacional
+            res.country = request.form.get('int_country')
+            res.return_date = request.form.get('int_return_date')
+            res.trip_duration = int(request.form.get('int_days', 0) or 0)
+            # Limpiar campos de otros servicios
+            res.institution_name = None
+            res.schedule_type = None
+        elif service_type == 'Transporte de Estudiantes':
+            # Construir fecha si se enviaron partes
+            day = request.form.get('day')
+            month = request.form.get('month')
+            year = request.form.get('year')
+            if day and month and year:
+                res.date = f"{day}-{month}-{year}"
+            
+            res.institution_name = request.form.get('institution_name')
+            res.schedule_type = request.form.get('schedule_type')
+            # Limpiar campos internacional
+            res.country = None
+            res.return_date = None
+            res.trip_duration = None
+        else: # Servicios Especiales
+            day = request.form.get('day')
+            month = request.form.get('month')
+            year = request.form.get('year')
+            if day and month and year:
+                res.date = f"{day}-{month}-{year}"
+            
+            res.destination = request.form.get('destination')
+            # Limpiar otros
+            res.institution_name = None
+            res.country = None
+
+        # Datos comunes
+        res.origin = request.form.get('origin')
+        res.origin_url = request.form.get('origin_url')
+        res.destination_url = request.form.get('destination_url')
+        res.departure_time = request.form.get('time')
+        res.capacity_needed = int(request.form.get('capacity', 0) or 0)
+        res.comments = request.form.get('comments')
+        res.needs_pickup = request.form.get('pickup') == 'si'
+        res.pickup_locations = request.form.get('pickup_list')
+
+        db.session.commit()
+        flash("Solicitud actualizada correctamente.", "success")
+        
+        # Redirigir al perfil simulando el PIN
+        return render_template('perfil.html', client=res.client, reservations=Reservation.query.filter_by(client_id=res.client.id).order_by(Reservation.id.desc()).all(), pin=res.client.pin)
+
+    return render_template('perfil_edit.html', res=res, client=res.client)
 
 # ---------------------------------------------------------
 # RUTAS ADMINISTRATIVAS (DASHBOARD)
@@ -195,15 +362,16 @@ def export_data():
     content = "REPORTE DE RESERVAS\n" + "="*20 + "\n"
     
     for r in res:
-        # Obtener nombre del cliente de forma segura
         cliente_nombre = f"{r.client.name} {r.client.last_name1}" if r.client else "Sin Cliente"
-        
-        # Información extra si es internacional
         extra_info = ""
         if r.service_category == 'Viajes Internacionales':
              extra_info = f" | País: {r.country} | Regreso: {r.return_date} ({r.trip_duration} días)"
         
-        content += f"ID: {r.id} | Cliente: {cliente_nombre} | Destino: {r.destination} | Salida: {r.date} | Estado: {r.status}{extra_info}\n"
+        status_str = r.status
+        if r.status == 'Cancelada' and r.cancelled_at:
+            status_str += f" ({r.cancelled_at})"
+            
+        content += f"ID: {r.id} | Cliente: {cliente_nombre} | Destino: {r.destination} | Salida: {r.date} | Estado: {status_str}{extra_info}\n"
     
     with open("reporte_reservas.txt", "w") as f:
         f.write(content)

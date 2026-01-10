@@ -1,14 +1,19 @@
 {% extends 'base.html' %}
 {% block content %}
 
+<!-- Librería para generar imágenes (HTML to Canvas) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
 <div class="row justify-content-center">
-    <div class="col-md-8">
+    <div class="col-md-9">
         
-        <!-- Tarjeta de Búsqueda -->
+        <!-- ============================================= -->
+        <!-- 1. SECCIÓN DE BÚSQUEDA (Siempre arriba) -->
+        <!-- ============================================= -->
         <div class="card shadow border-0 mb-5" style="border-radius: 15px;">
             <div class="card-body p-4 text-center">
                 <h2 class="text-primary fw-bold mb-3"><i class="fas fa-search-location"></i> Mis Solicitudes</h2>
-                <p class="text-muted mb-4">Ingresa tu PIN de Cliente Frecuente (8 caracteres) para ver el estado de tus viajes.</p>
+                <p class="text-muted mb-4">Ingresa tu PIN de Cliente Frecuente (8 caracteres) para ver el historial y descargar tus comprobantes.</p>
                 
                 <form method="POST" action="/perfil" class="d-flex justify-content-center">
                     <div class="input-group" style="max-width: 400px;">
@@ -21,73 +26,362 @@
             </div>
         </div>
 
-        <!-- Resultados -->
+        <!-- ============================================= -->
+        <!-- 2. RESULTADOS / HISTORIAL (Abajo) -->
+        <!-- ============================================= -->
         {% if client %}
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="text-muted">Hola, <span class="text-dark fw-bold">{{ client.name }} {{ client.last_name1 }}</span></h5>
-                <span class="badge bg-light text-dark border">{{ reservations|length }} Solicitudes</span>
-            </div>
+            <div class="mb-4 animate__animated animate__fadeIn">
+                <hr class="my-4 opacity-25">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h4 class="fw-bold m-0 text-dark">Historial de Viajes</h4>
+                        <small class="text-muted">Cliente: <strong>{{ client.name }} {{ client.last_name1 }}</strong></small>
+                    </div>
+                    <span class="badge bg-dark rounded-pill px-3 py-2">{{ reservations|length }} Solicitudes Encontradas</span>
+                </div>
 
-            {% for res in reservations %}
-            <div class="card shadow-sm border-0 mb-3 hover-card">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <!-- Columna Estado -->
-                        <div class="col-3 col-md-2 text-center">
-                            {% if res.status == 'Pendiente' %}
-                                <div class="badge bg-warning text-dark p-2 w-100">Pendiente</div>
-                            {% elif res.status == 'Aprobada' %}
-                                <div class="badge bg-success p-2 w-100">Aprobada</div>
-                            {% else %}
-                                <div class="badge bg-secondary p-2 w-100">{{ res.status }}</div>
-                            {% endif %}
-                            <small class="d-block mt-2 text-muted x-small">#{{ res.id }}</small>
-                        </div>
-
-                        <!-- Columna Detalles -->
-                        <div class="col-9 col-md-10">
-                            <div class="d-flex justify-content-between">
-                                <h5 class="fw-bold mb-1 text-primary">{{ res.service_category }}</h5>
-                                <small class="text-muted"><i class="far fa-calendar-alt"></i> 
-                                    {% if res.service_category == 'Viajes Internacionales' %}
-                                        {{ res.date }} (Salida)
+                {% for res in reservations %}
+                <!-- TARJETA VISIBLE EN LA WEB -->
+                <div class="card shadow-sm border-0 mb-4 hover-card" 
+                     style="border-left: 5px solid 
+                     {% if res.status == 'Revisado' or res.status == 'Aprobada' %}#198754
+                     {% elif res.status == 'Cancelada' %}#dc3545
+                     {% elif res.status == 'Pendiente' %}#ffc107
+                     {% else %}#6c757d{% endif %} !important; 
+                     {% if res.status == 'Cancelada' %}opacity: 0.8;{% endif %}">
+                    
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <!-- Columna Estado y Fecha -->
+                            <div class="col-md-2 text-center mb-3 mb-md-0 border-end-md">
+                                <h3 class="fw-bold m-0 text-dark">{{ res.date.split('-')[0] if '-' in res.date else res.date[:2] }}</h3>
+                                <small class="text-uppercase fw-bold text-muted d-block mb-2">
+                                    {% if '-' in res.date and res.date.split('-')|length > 1 %}
+                                        Mes {{ res.date.split('-')[1] }}
                                     {% else %}
-                                        {{ res.date }}
+                                        FECHA
                                     {% endif %}
                                 </small>
-                            </div>
-                            
-                            <p class="mb-1 small">
-                                <strong>Destino:</strong> 
-                                {% if res.service_category == 'Viajes Internacionales' %}
-                                    {{ res.country }} - {{ res.destination }}
+                                
+                                <!-- Badges de Estado -->
+                                {% if res.status == 'Pendiente' %}
+                                    <span class="badge bg-warning text-dark w-100">Pendiente</span>
+                                {% elif res.status == 'Revisado' %}
+                                    <span class="badge bg-success w-100"><i class="fas fa-check-double me-1"></i> Revisado</span>
+                                {% elif res.status == 'Aprobada' %}
+                                    <span class="badge bg-success w-100">Aprobada</span>
+                                {% elif res.status == 'Cancelada' %}
+                                    <span class="badge bg-danger w-100">Cancelada</span>
                                 {% else %}
-                                    {{ res.destination or 'No especificado' }}
+                                    <span class="badge bg-secondary w-100">{{ res.status }}</span>
                                 {% endif %}
-                            </p>
-                            
-                            <div class="d-flex flex-wrap gap-2 small text-muted">
-                                <span><i class="far fa-clock"></i> {{ res.departure_time }}</span>
-                                <span><i class="fas fa-users"></i> {{ res.capacity_needed }} pax</span>
-                                {% if res.trip_duration %}
-                                    <span><i class="fas fa-hourglass-half"></i> {{ res.trip_duration }} días</span>
+                            </div>
+
+                            <!-- Columna Detalles -->
+                            <div class="col-md-7 ps-md-4 mb-3 mb-md-0">
+                                <h5 class="fw-bold text-primary mb-2 text-uppercase">{{ res.service_category }}</h5>
+                                
+                                <!-- Mensaje si está cancelado -->
+                                {% if res.status == 'Cancelada' and res.cancelled_at %}
+                                    <div class="alert alert-danger py-1 px-2 mb-2 d-inline-block small">
+                                        <i class="fas fa-ban me-1"></i> Cancelado el: <strong>{{ res.cancelled_at }}</strong>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Origen -->
+                                {% if res.origin and res.origin != 'None' %}
+                                <div class="mb-2">
+                                    <i class="fas fa-map-marker-alt text-danger me-2" style="width: 20px; text-align: center;"></i> 
+                                    <strong>Origen:</strong> {{ res.origin }}
+                                </div>
+                                {% endif %}
+
+                                <!-- Destino -->
+                                <div class="mb-2">
+                                    <i class="fas fa-flag-checkered text-success me-2" style="width: 20px; text-align: center;"></i> 
+                                    <strong>Destino:</strong> 
+                                    {% if res.service_category == 'Viajes Internacionales' %}
+                                        {{ res.country }} 
+                                        {% if res.destination and res.destination != 'None' %} - {{ res.destination }}{% endif %}
+                                    {% else %}
+                                        {% if res.destination and res.destination != 'None' %}
+                                            {{ res.destination }}
+                                        {% else %}
+                                            No especificado
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="text-muted small mt-3 d-flex flex-wrap gap-3">
+                                    <span><i class="far fa-clock me-1"></i> {{ res.departure_time }}</span>
+                                    <span><i class="fas fa-users me-1"></i> {{ res.capacity_needed }} pax</span>
+                                    {% if res.id %}
+                                    <span class="text-dark fw-bold">ID: #{{ res.id }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Columna Acciones -->
+                            <div class="col-md-3 text-center text-md-end">
+                                <!-- Botón Descargar -->
+                                <button onclick="downloadTicket('ticket-{{ res.id }}')" class="btn btn-outline-dark rounded-pill w-100 mb-2 btn-sm">
+                                    <i class="fas fa-camera me-2"></i> Descargar Tarjeta
+                                </button>
+                                
+                                <!-- ACCIONES DE CLIENTE: Editar y Cancelar (Solo si Pendiente) -->
+                                {% if res.status == 'Pendiente' %}
+                                    <!-- Botón Editar (NUEVO) -->
+                                    <a href="{{ url_for('main.edit_reservation', id=res.id) }}" class="btn btn-primary rounded-pill w-100 btn-sm mb-2">
+                                        <i class="fas fa-edit me-2"></i> Editar Solicitud
+                                    </a>
+
+                                    <button onclick="confirmCancel('{{ res.id }}')" class="btn btn-outline-danger rounded-pill w-100 btn-sm mb-2">
+                                        <i class="fas fa-times-circle me-2"></i> Cancelar Solicitud
+                                    </button>
+                                {% endif %}
+
+                                <!-- ACCIONES DE ADMIN: Revisar -->
+                                {% if session.get('role') == 'admin' and res.status == 'Pendiente' %}
+                                    <form action="{{ url_for('main.review_reservation', id=res.id) }}" method="POST">
+                                        <input type="hidden" name="return_pin" value="{{ pin }}">
+                                        <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill w-100 btn-sm">
+                                            <i class="fas fa-search me-2"></i> Revisar
+                                        </button>
+                                    </form>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- ================================================================================= -->
+                <!-- PLANTILLA OCULTA PARA EXPORTAR A IMAGEN (TICKET) -->
+                <!-- ================================================================================= -->
+                <div style="position: fixed; left: -9999px; top: 0;">
+                    <div id="ticket-{{ res.id }}" class="bg-white" 
+                         style="width: 500px; padding: 30px; border: 2px solid 
+                         {% if res.status == 'Cancelada' %}#dc3545
+                         {% elif res.status == 'Revisado' %}#198754
+                         {% elif res.status == 'Aprobada' %}#198754
+                         {% else %}#ffc107{% endif %}; 
+                         font-family: sans-serif; position: relative; background-color: #ffffff;">
+                        
+                        {% if res.status == 'Cancelada' %}
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 80px; color: rgba(220, 53, 69, 0.2); font-weight: bold; border: 5px solid rgba(220, 53, 69, 0.2); padding: 10px 40px; border-radius: 10px; pointer-events: none;">
+                            CANCELADO
+                        </div>
+                        {% endif %}
+
+                        <div style="text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 20px; margin-bottom: 20px;">
+                            <h2 style="color: {% if res.status == 'Cancelada' %}#dc3545{% elif res.status == 'Revisado' or res.status == 'Aprobada' %}#198754{% else %}#ffc107{% endif %}; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 2px;">TRANSAVI C.R.</h2>
+                            <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">COMPROBANTE DE SOLICITUD</p>
+                            <div style="background: #000; color: #fff; display: inline-block; padding: 5px 15px; border-radius: 20px; margin-top: 10px; font-size: 12px; font-weight: bold;">
+                                ID RESERVA: #{{ res.id }}
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 10px;">
+                            <h4 style="color: #333; margin: 0 0 10px 0; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                                <i class="fas fa-user-circle"></i> DATOS DEL CLIENTE
+                            </h4>
+                            <table style="width: 100%; font-size: 14px;">
+                                <tr>
+                                    <td style="font-weight: bold; color: #555; padding: 3px 0;">Nombre:</td>
+                                    <td style="text-align: right;">{{ client.name }} {{ client.last_name1 }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold; color: #555; padding: 3px 0;">Teléfono:</td>
+                                    <td style="text-align: right;">{{ client.phone }}</td>
+                                </tr>
+                                {% if client.email and client.email != 'None' %}
+                                <tr>
+                                    <td style="font-weight: bold; color: #555; padding: 3px 0;">Email:</td>
+                                    <td style="text-align: right;">{{ client.email }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #333; margin: 0 0 15px 0; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                                <i class="fas fa-route"></i> DETALLES DEL VIAJE
+                            </h4>
+                            
+                            <div style="margin-bottom: 10px;">
+                                <span style="display: block; font-size: 12px; color: #888; font-weight: bold;">TIPO DE SERVICIO</span>
+                                <span style="display: block; font-size: 16px; font-weight: bold; color: #000;">{{ res.service_category }}</span>
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div style="width: 48%;">
+                                    <span style="display: block; font-size: 12px; color: #888; font-weight: bold;">FECHA SALIDA</span>
+                                    <span style="display: block; font-size: 15px; color: #000;">{{ res.date }}</span>
+                                </div>
+                                <div style="width: 48%;">
+                                    <span style="display: block; font-size: 12px; color: #888; font-weight: bold;">HORA</span>
+                                    <span style="display: block; font-size: 15px; color: #000;">{{ res.departure_time }}</span>
+                                </div>
+                            </div>
+
+                            <div style="background: {% if res.status == 'Cancelada' %}#f8d7da{% elif res.status == 'Revisado' or res.status == 'Aprobada' %}#d1e7dd{% else %}#fff3cd{% endif %}; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                {% if res.origin and res.origin != 'None' %}
+                                <div style="margin-bottom: 5px;">
+                                    <strong style="color: #d63384;">● ORIGEN:</strong> {{ res.origin }}
+                                </div>
+                                {% endif %}
+                                
+                                <div>
+                                    <strong style="color: #198754;">● DESTINO:</strong> 
+                                    {% if res.service_category == 'Viajes Internacionales' %}
+                                        {{ res.country }}
+                                        {% if res.destination and res.destination != 'None' %} - {{ res.destination }}{% endif %}
+                                    {% else %}
+                                        {% if res.destination and res.destination != 'None' %}
+                                            {{ res.destination }}
+                                        {% else %}
+                                            No especificado
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div style="font-size: 13px; color: #555;">
+                                <strong>Capacidad:</strong> {{ res.capacity_needed }} pasajeros
+                                {% if res.trip_duration %} | <strong>Duración:</strong> {{ res.trip_duration }} días {% endif %}
+                            </div>
+                            
+                            {% if res.status == 'Cancelada' and res.cancelled_at %}
+                            <div style="margin-top: 15px; text-align: center; color: #dc3545; font-size: 12px; font-weight: bold;">
+                                Cancelado el: {{ res.cancelled_at }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div style="text-align: center; margin-top: 20px; border-top: 2px dashed #ccc; padding-top: 15px;">
+                            <span style="display: block; font-size: 12px; color: #aaa; margin-bottom: 5px;">ESTADO DE LA SOLICITUD</span>
+                            <span style="
+                                display: inline-block; 
+                                padding: 5px 20px; 
+                                border-radius: 5px; 
+                                font-weight: bold; 
+                                color: white; 
+                                background-color: {% if res.status == 'Revisado' or res.status == 'Aprobada' %}#198754{% elif res.status == 'Cancelada' %}#dc3545{% elif res.status == 'Pendiente' %}#ffc107; color: #000{% else %}#6c757d{% endif %};">
+                                {{ res.status|upper }}
+                            </span>
+                            <p style="margin-top: 15px; font-size: 10px; color: #999;">Generado automáticamente por TRANSAVI Web App</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIN PLANTILLA TICKET -->
+
+                {% endfor %}
             </div>
-            {% endfor %}
         {% endif %}
 
+    </div>
+</div>
+
+<!-- ============================================= -->
+<!-- MODAL DE CONFIRMACIÓN DE CANCELACIÓN -->
+<!-- ============================================= -->
+<div class="modal fade" id="cancelConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0 justify-content-center">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-3 d-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                    <i class="fas fa-exclamation-triangle text-danger fa-3x"></i>
+                </div>
+            </div>
+            <div class="modal-body text-center pt-3 px-4">
+                <h4 class="fw-bold text-dark mb-3">¿Estás seguro?</h4>
+                <p class="text-muted mb-4">
+                    Si cancelas esta solicitud, quedará marcada como "Cancelada" en tu historial.
+                    <br><br>
+                    <strong class="text-danger d-block border border-danger rounded p-2 bg-light-danger">
+                        <i class="fas fa-info-circle"></i> Tendrás que volver a llenar todo el formulario si deseas solicitar un nuevo viaje.
+                    </strong>
+                </p>
+                
+                <form id="cancelForm" method="POST" action="">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-danger rounded-pill py-2 fw-bold shadow-sm">
+                            Sí, Cancelar Solicitud
+                        </button>
+                        <button type="button" class="btn btn-light rounded-pill py-2 text-muted border" data-bs-dismiss="modal">
+                            No, Conservar Viaje
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
 <style>
     .hover-card { transition: transform 0.2s; }
     .hover-card:hover { transform: translateY(-2px); }
-    .x-small { font-size: 0.7rem; }
-    /* Para inputs que se vean mayúsculas mientras escribe */
-    input[name="pin"] { text-transform: uppercase; letter-spacing: 2px; }
+    .x-small { font-size: 0.75rem; }
+    input[name="pin"] { letter-spacing: 3px; font-size: 1.2rem; }
+    
+    @media (max-width: 767px) {
+        .border-end-md { border-right: none !important; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
+    }
+    @media (min-width: 768px) {
+        .border-end-md { border-right: 1px solid #eee; }
+    }
+    .bg-light-danger { background-color: #fff5f5; }
 </style>
+
+<script>
+    /**
+     * Abre el modal de confirmación y configura la acción del formulario
+     */
+    function confirmCancel(reservationId) {
+        const form = document.getElementById('cancelForm');
+        form.action = `/cancel_reservation/${reservationId}`;
+        const modal = new bootstrap.Modal(document.getElementById('cancelConfirmModal'));
+        modal.show();
+    }
+
+    /**
+     * Función para convertir el DIV del ticket en una imagen PNG y descargarla.
+     */
+    function downloadTicket(elementId) {
+        const element = document.getElementById(elementId);
+        
+        const options = {
+            scale: 2, 
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: true,
+            onclone: (clonedDoc) => {
+                const clonedElement = clonedDoc.getElementById(elementId);
+                if(clonedElement) {
+                    clonedElement.style.opacity = '1';
+                    clonedElement.style.position = 'static'; 
+                }
+            }
+        };
+
+        const btn = event.currentTarget; 
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        btn.disabled = true;
+
+        html2canvas(element, options).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Comprobante_Transavi_${elementId.replace('ticket-', '')}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(err => {
+            console.error("Error generando ticket:", err);
+            alert("Hubo un error al generar la imagen. Por favor intenta de nuevo.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+</script>
 {% endblock %}

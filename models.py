@@ -66,13 +66,16 @@ class Reservation(db.Model):
     service_category = db.Column(db.String(50))
     capacity_needed = db.Column(db.Integer)
     comments = db.Column(db.Text)
-    status = db.Column(db.String(20), default='Pendiente')
+    status = db.Column(db.String(20), default='Pendiente') # Estados: Pendiente, Aprobada, Cancelada, Revisado
+    
+    # Campo nuevo para registrar cuándo se canceló
+    cancelled_at = db.Column(db.String(50), nullable=True)
     
     # Campos específicos: Estudiantes
     institution_name = db.Column(db.String(100))
     schedule_type = db.Column(db.String(50))
     
-    # Campos específicos: Internacional (NUEVOS)
+    # Campos específicos: Internacional
     country = db.Column(db.String(50))       # País destino
     return_date = db.Column(db.String(20))   # Fecha de regreso
     trip_duration = db.Column(db.Integer)    # Cantidad de días

@@ -4,8 +4,6 @@ from extensions import db, bcrypt
 from functools import wraps
 
 # Definimos el Blueprint 'users'
-# NOTA: Al cambiar de 'admin' a 'users', deberás actualizar tus url_for en los templates.
-# Ejemplo: url_for('admin.login') -> url_for('users.login')
 users_bp = Blueprint('users', __name__)
 
 # ==========================================
@@ -18,9 +16,9 @@ class User(db.Model):
     __tablename__ = 'user'
     
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True, nullable=False)
+    username = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(100), nullable=False)
+    password = db.Column(db.String(200), nullable=False) # Aumentado a 200 para hashes largos
     # Roles sugeridos: 'admin', 'user', 'enterprise'
     role = db.Column(db.String(20), default='user') 
 
@@ -73,6 +71,7 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
+        # Permitimos que el form envíe un rol si es necesario, sino default 'user'
         role = request.form.get('role', 'user')
         
         # Validaciones básicas
@@ -150,12 +149,11 @@ def logout():
 def manage_users():
     """
     Panel para ver todos los usuarios registrados (Solo Admin).
-    Requiere crear un template 'users_list.html' o reutilizar dashboard.
+    Muestra la lista de usuarios usando el template 'users_list.html'.
     """
     users = User.query.all()
-    # Por ahora renderizamos el dashboard pero pasamos la lista de usuarios explícitamente
-    # Idealmente crearías un template específico.
-    return render_template('dashboard.html', users_list=users)
+    # Usamos una plantilla específica para la lista para evitar errores de contexto
+    return render_template('users_list.html', users=users)
 
 @users_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @login_required
@@ -178,7 +176,7 @@ def delete_user(user_id):
         db.session.rollback()
         flash("Error al eliminar el usuario.", "danger")
 
-    return redirect(url_for('main.dashboard'))
+    return redirect(url_for('users.manage_users'))
 
 @users_bp.route('/users/change_role/<int:user_id>', methods=['POST'])
 @login_required
@@ -191,10 +189,15 @@ def change_role(user_id):
     new_role = request.form.get('new_role')
     
     if new_role in ['user', 'admin', 'enterprise']:
+        # Evitar quitarse admin a uno mismo
+        if user.id == session.get('user_id') and new_role != 'admin':
+             flash("No puedes quitarte tus propios permisos de administrador.", "warning")
+             return redirect(url_for('users.manage_users'))
+
         user.role = new_role
         db.session.commit()
         flash(f"Rol de {user.username} actualizado a {new_role}.", "success")
     else:
         flash("Rol no válido.", "danger")
         
-    return redirect(url_for('main.dashboard'))
+    return redirect(url_for('users.manage_users'))

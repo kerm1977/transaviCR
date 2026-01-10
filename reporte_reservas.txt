@@ -1,0 +1,3 @@
+REPORTE DE RESERVAS
+====================
+ID: 1 | Cliente: Alejandro Ramirez | Destino: None | Salida: Pendiente | Estado: Pendiente

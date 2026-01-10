@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-9">
+        <div class="card shadow border-0" style="border-radius: 15px;">
+            <div class="card-header bg-primary text-white text-center py-3" style="border-radius: 15px 15px 0 0;">
+                <h3 class="fw-bold m-0"><i class="fas fa-edit me-2"></i> Editar Solicitud #{{ res.id }}</h3>
+            </div>
+            <div class="card-body p-4">
+                
+                <form action="{{ url_for('main.edit_reservation', id=res.id) }}" method="POST">
+                    
+                    <!-- 1. DATOS PERSONALES -->
+                    <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">Datos del Cliente</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Nombre</label>
+                            <input type="text" name="client_name" class="form-control" value="{{ client.name }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">1er Apellido</label>
+                            <input type="text" name="client_lastname1" class="form-control" value="{{ client.last_name1 }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">2do Apellido</label>
+                            <input type="text" name="client_lastname2" class="form-control" value="{{ client.last_name2 }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Teléfono</label>
+                            <input type="tel" name="client_phone" class="form-control" value="{{ client.phone }}" maxlength="8" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Email</label>
+                            <input type="email" name="client_email" class="form-control" value="{{ client.email }}" required>
+                        </div>
+                    </div>
+
+                    <!-- 2. TIPO DE SERVICIO -->
+                    <h5 class="fw-bold text-primary mb-3 border-bottom pb-2">Tipo de Servicio</h5>
+                    <div class="mb-4">
+                        <select name="service_type" id="serviceSelect" class="form-select bg-light fw-bold" onchange="toggleFields()">
+                            <option value="Transporte de Estudiantes" {% if res.service_category == 'Transporte de Estudiantes' %}selected{% endif %}>Transporte de Estudiantes</option>
+                            <option value="Servicios Especiales" {% if res.service_category == 'Servicios Especiales' %}selected{% endif %}>Servicios Especiales</option>
+                            <option value="Viajes Internacionales" {% if res.service_category == 'Viajes Internacionales' %}selected{% endif %}>Viajes Internacionales</option>
+                        </select>
+                    </div>
+
+                    <!-- 3. CAMPOS DINÁMICOS -->
+                    
+                    <!-- A. INTERNACIONAL -->
+                    <div id="internationalFields" class="d-none">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">País Destino</label>
+                                <select name="int_country" class="form-select">
+                                    {% for pais in ['Panamá', 'Nicaragua', 'El Salvador', 'Honduras', 'Guatemala', 'México'] %}
+                                        <option value="{{ pais }}" {% if res.country == pais %}selected{% endif %}>{{ pais }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Origen</label>
+                                <input type="text" name="origin" class="form-control" value="{{ res.origin }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Descripción del Destino</label>
+                            <textarea name="int_description" class="form-control" rows="2">{{ res.destination if res.service_category == 'Viajes Internacionales' else '' }}</textarea>
+                        </div>
+                        <div class="row g-2 bg-light p-2 rounded border">
+                            <div class="col-md-4">
+                                <label class="form-label x-small fw-bold">Días</label>
+                                <input type="number" name="int_days" class="form-control" value="{{ res.trip_duration }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label x-small fw-bold">Salida</label>
+                                <input type="date" name="int_departure_date" class="form-control" value="{{ res.date if res.service_category == 'Viajes Internacionales' else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label x-small fw-bold">Regreso</label>
+                                <input type="date" name="int_return_date" class="form-control" value="{{ res.return_date }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- B. ESTUDIANTES -->
+                    <div id="studentFields" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Institución Académica</label>
+                            <input type="text" name="institution_name" class="form-control" value="{{ res.institution_name }}">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Horario</label>
+                                <select name="schedule_type" class="form-select">
+                                    <option value="Lunes a Viernes" {% if res.schedule_type == 'Lunes a Viernes' %}selected{% endif %}>Lunes a Viernes</option>
+                                    <option value="Sábados" {% if res.schedule_type == 'Sábados' %}selected{% endif %}>Sábados</option>
+                                    <option value="Personalizado" {% if res.schedule_type == 'Personalizado' %}selected{% endif %}>Personalizado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- C. COMUNES (Especiales / Estudiantes) -->
+                    <div id="commonFields" class="d-none">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Fecha de Salida</label>
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <input type="number" name="day" class="form-control" placeholder="Día" value="{{ res.date.split('-')[0] if '-' in res.date else '' }}">
+                                </div>
+                                <div class="col-4">
+                                    <select name="month" class="form-select">
+                                        <option value="">Mes</option>
+                                        {% for m in ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'] %}
+                                            <option value="{{ loop.index }}" {% if '-' in res.date and res.date.split('-')|length > 1 and res.date.split('-')[1]|int == loop.index %}selected{% endif %}>{{ m }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-4">
+                                    <input type="number" name="year" class="form-control" placeholder="Año" value="{{ res.date.split('-')[2] if '-' in res.date and res.date.split('-')|length > 2 else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Origen</label>
+                                <input type="text" name="origin" class="form-control" value="{{ res.origin }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">URL Origen</label>
+                                <input type="text" name="origin_url" class="form-control" value="{{ res.origin_url }}">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Destino</label>
+                                <input type="text" name="destination" class="form-control" value="{{ res.destination if res.service_category != 'Viajes Internacionales' else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">URL Destino</label>
+                                <input type="text" name="destination_url" class="form-control" value="{{ res.destination_url }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. DATOS FINALES (Todos) -->
+                    <h5 class="fw-bold text-primary mb-3 border-bottom pb-2 mt-4">Detalles Logísticos</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Hora Salida</label>
+                            <input type="time" name="time" class="form-control" value="{{ res.departure_time }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Capacidad</label>
+                            <input type="number" name="capacity" class="form-control" value="{{ res.capacity_needed }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">¿Recoger Personas?</label>
+                        <select name="pickup" class="form-select" onchange="togglePickup(this.value)">
+                            <option value="no" {% if not res.needs_pickup %}selected{% endif %}>No, salida directa</option>
+                            <option value="si" {% if res.needs_pickup %}selected{% endif %}>Sí, agregar paradas</option>
+                        </select>
+                    </div>
+                    <div id="pickupDetail" class="{{ 'd-none' if not res.needs_pickup else '' }} mb-3">
+                        <label class="form-label fw-bold small">Puntos de Recogida</label>
+                        <textarea name="pickup_list" class="form-control" rows="2">{{ res.pickup_locations }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small">Comentarios / Detalles Extra</label>
+                        <textarea name="comments" class="form-control" rows="2">{{ res.comments }}</textarea>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow">
+                            <i class="fas fa-save me-2"></i> Guardar Cambios
+                        </button>
+                        <!-- Simulamos volver al perfil -->
+                        <!-- Usamos un form para POST con el PIN si fuera necesario, o simple link al home -->
+                        <a href="/" class="btn btn-outline-secondary rounded-pill">Cancelar Edición</a>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFields() {
+        const type = document.getElementById('serviceSelect').value;
+        const intFields = document.getElementById('internationalFields');
+        const stuFields = document.getElementById('studentFields');
+        const commonFields = document.getElementById('commonFields');
+
+        // Ocultar todos
+        intFields.classList.add('d-none');
+        stuFields.classList.add('d-none');
+        commonFields.classList.add('d-none');
+
+        // Mostrar según tipo
+        if (type === 'Viajes Internacionales') {
+            intFields.classList.remove('d-none');
+        } else if (type === 'Transporte de Estudiantes') {
+            stuFields.classList.remove('d-none');
+        } else {
+            // Servicios Especiales usa común
+            commonFields.classList.remove('d-none');
+        }
+    }
+
+    function togglePickup(val) {
+        const div = document.getElementById('pickupDetail');
+        if(val === 'si') div.classList.remove('d-none');
+        else div.classList.add('d-none');
+    }
+
+    // Inicializar al cargar
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleFields();
+    });
+</script>
+{% endblock %}
