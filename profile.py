@@ -1,6 +1,6 @@
 # Archivo: profile.py
 from flask import Blueprint, render_template, request, flash
-from models import Client, Reservation
+from models import Client, Reservation, AboutUs  # <--- Agregamos AboutUs
 
 # Definimos el Blueprint para el perfil
 profile_bp = Blueprint('profile', __name__)
@@ -13,6 +13,9 @@ def my_requests():
     client = None
     reservations = []
     pin_searched = ""
+    
+    # Obtenemos la info de la empresa para el botón de WhatsApp
+    about = AboutUs.query.first() 
     
     if request.method == 'POST':
         pin_searched = request.form.get('pin', '').strip().upper()
@@ -30,4 +33,5 @@ def my_requests():
         else:
             flash("Por favor ingresa un PIN.", "warning")
             
-    return render_template('perfil.html', client=client, reservations=reservations, pin=pin_searched)
+    # Pasamos 'about' a la plantilla
+    return render_template('perfil.html', client=client, reservations=reservations, pin=pin_searched, about=about)

@@ -121,11 +121,19 @@
                             <label class="form-label small fw-bold">Segundo Apellido <span class="text-danger">*</span></label>
                             <input type="text" id="client_lastname2" form="formEstandar" name="client_lastname2" class="form-control strict-name" placeholder="Segundo Apellido" required>
                         </div>
+                        
+                        <!-- MODIFICADO: Validación Teléfono -->
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Teléfono / WhatsApp <span class="text-danger">*</span></label>
-                            <input type="tel" id="client_phone" form="formEstandar" name="client_phone" class="form-control strict-phone" placeholder="88888888" maxlength="8" required>
-                            <div class="form-text x-small">Exactamente 8 dígitos numéricos.</div>
+                            <!-- Agregamos eventos oninput y onblur para validaciones -->
+                            <input type="tel" id="client_phone" form="formEstandar" name="client_phone" 
+                                   class="form-control strict-phone" placeholder="88888888" maxlength="8" required
+                                   oninput="validatePhoneRealTime(this)" onblur="checkPhoneDuplicate(this)">
+                            <div id="phoneHelp" class="form-text x-small">Exactamente 8 dígitos numéricos.</div>
+                            <!-- Feedback para errores -->
+                            <div id="phoneFeedback" class="form-text text-danger fw-bold d-none"></div>
                         </div>
+
                         <div class="col-md-6">
                             <label class="form-label small fw-bold">Email <span class="text-danger">*</span></label>
                             <input type="email" id="client_email" form="formEstandar" name="client_email" class="form-control" placeholder="nombre@correo.com" required>
@@ -286,7 +294,7 @@
                     </div>
 
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-warning btn-lg rounded-pill shadow fw-bold text-dark py-3 hover-scale">
+                        <button type="submit" id="submitBtn" class="btn btn-warning btn-lg rounded-pill shadow fw-bold text-dark py-3 hover-scale">
                             SOLICITAR AHORA <i class="fas fa-arrow-right ms-2"></i>
                         </button>
                     </div>
@@ -383,246 +391,5 @@
     </div>
 </div>
 
-<style>
-    .text-warning { color: #ffc107 !important; }
-    .bg-light-warning { background-color: #fff3cd !important; }
-    .border-warning { border-color: #ffc107 !important; }
-    .text-warning-muted { color: #997404 !important; }
-    .hover-scale { transition: transform 0.2s; }
-    .hover-scale:hover { transform: scale(1.02); }
-    .form-control:focus, .form-select:focus { border-color: #ffc107; box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25); }
-    
-    .service-card { transition: all 0.3s ease; border: 2px solid transparent !important; min-height: 90px; }
-    .btn-check:checked + .service-card { background-color: #fff3cd !important; border-color: #ffc107 !important; transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
-    .service-card:hover { background-color: #f8f9fa; transform: translateY(-2px); }
-    .cursor-pointer { cursor: pointer; }
-    .ls-2 { letter-spacing: 2px; }
-    .ls-1 { letter-spacing: 1px; }
-    .x-small { font-size: 0.75rem; }
-    
-    .border-dashed { border-style: dashed !important; }
-    .letter-spacing-3 { letter-spacing: 3px; }
-
-    @media (max-width: 991px) {
-        .responsive-icon { font-size: 1.5rem !important; }
-        .icon-flat { width: 45px !important; height: 45px !important; }
-        .responsive-text { font-size: 0.8rem !important; line-height: 1.2; }
-    }
-    
-    @media (min-width: 992px) {
-        .responsive-icon { font-size: 2em !important; }
-        .icon-flat { width: 60px !important; height: 60px !important; }
-        .responsive-text { font-size: 0.9rem !important; }
-        #client_pin { max-width: 120px; }
-    }
-</style>
-
-<script>
-    const adminWhatsApp = "{{ about.mobile_admin if about and about.mobile_admin else '00000000' }}";
-
-    document.addEventListener("DOMContentLoaded", function() {
-        // Detección de PIN nuevo para Modal de Éxito
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    if ("{{ category }}" === "new_pin_modal") {
-                        const pinValue = "{{ message }}";
-                        document.getElementById('modalPinValue').textContent = pinValue;
-                        new bootstrap.Modal(document.getElementById('pinSuccessModal')).show();
-                    }
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        selectService('estudiantes');
-        const pinInput = document.getElementById('client_pin');
-        if(pinInput) pinInput.disabled = false;
-    });
-
-    // --- Lógica de Recuperación de PIN ---
-    function openRecoverModal() {
-        new bootstrap.Modal(document.getElementById('recoverPinModal')).show();
-    }
-
-    function resetForgotRadio() {
-        // Al cerrar el modal, volver el radio a "No"
-        document.getElementById('forgot_no').checked = true;
-    }
-
-    function submitRecovery() {
-        const phone = document.getElementById('rec_phone').value;
-        const email = document.getElementById('rec_email').value;
-        const alertBox = document.getElementById('recoverAlert');
-        const resultBox = document.getElementById('recoverResult');
-
-        alertBox.className = 'alert d-none';
-        resultBox.classList.add('d-none');
-
-        if(!phone || !email) {
-            alertBox.textContent = "Por favor completa ambos campos.";
-            alertBox.className = 'alert alert-danger';
-            alertBox.classList.remove('d-none');
-            return;
-        }
-
-        fetch('/api/recover_pin', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({phone: phone, email: email})
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                document.getElementById('rec_name').textContent = data.name;
-                document.getElementById('rec_pin_value').textContent = data.pin;
-                resultBox.classList.remove('d-none');
-            } else {
-                alertBox.textContent = data.message;
-                alertBox.className = 'alert alert-danger';
-                alertBox.classList.remove('d-none');
-            }
-        })
-        .catch(err => console.error(err));
-    }
-
-    function useRecoveredPin() {
-        const recoveredPin = document.getElementById('rec_pin_value').textContent;
-        document.getElementById('client_pin').value = recoveredPin;
-        // Cerrar modal
-        const modalEl = document.getElementById('recoverPinModal');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
-        resetForgotRadio();
-        // Cargar datos
-        fetchClientData();
-    }
-
-    // --- Validaciones Normales ---
-    document.querySelectorAll('.strict-name').forEach(input => {
-        input.addEventListener('input', function(e) {
-            let val = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ]/g, '');
-            if (val.length > 0) val = val.charAt(0).toUpperCase() + val.slice(1).toLowerCase();
-            this.value = val;
-        });
-    });
-    
-    // Aplicar a todos los inputs de teléfono (incluyendo el de recuperación)
-    document.querySelectorAll('.strict-phone, input[type="tel"]').forEach(input => {
-        input.addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
-    });
-
-    function fetchClientData() {
-        const pin = document.getElementById('client_pin').value;
-        if (pin.length < 8) return alert("El PIN debe tener 8 caracteres");
-        fetch(`/api/get_client/${pin}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('client_name').value = data.name;
-                    document.getElementById('client_lastname1').value = data.last_name1;
-                    document.getElementById('client_lastname2').value = data.last_name2;
-                    document.getElementById('client_phone').value = data.phone;
-                    document.getElementById('client_email').value = data.email;
-                    const inputs = document.querySelectorAll('.strict-name, .strict-phone, #client_email');
-                    inputs.forEach(i => { i.classList.add('bg-light-warning'); setTimeout(() => i.classList.remove('bg-light-warning'), 1000); });
-                } else {
-                    alert("PIN no encontrado.");
-                }
-            })
-            .catch(err => console.error(err));
-    }
-
-    function selectService(serviceKey) {
-        const container = document.getElementById('dynamicFormContainer');
-        const formEstandar = document.getElementById('formEstandar');
-        const formEmpresas = document.getElementById('formEmpresas');
-        const hiddenInput = document.getElementById('hiddenServiceType');
-        const formTitle = document.getElementById('formTitle');
-        
-        const studentFields = document.getElementById('studentFields');
-        const commonFields = document.getElementById('commonFields');
-        const internationalFields = document.getElementById('internationalFields');
-        const pickupSection = document.getElementById('pickupSection');
-
-        container.classList.remove('d-none');
-
-        const toggleInputs = (element, enable) => {
-            const inputs = element.querySelectorAll('input, select, textarea');
-            inputs.forEach(input => input.disabled = !enable);
-        };
-
-        if (serviceKey === 'corporativo') {
-            formEstandar.classList.add('d-none');
-            formEmpresas.classList.remove('d-none');
-            formTitle.textContent = "DETALLES CORPORATIVOS";
-        } else {
-            formEstandar.classList.remove('d-none');
-            formEmpresas.classList.add('d-none');
-            
-            studentFields.classList.add('d-none');
-            commonFields.classList.add('d-none');
-            internationalFields.classList.add('d-none');
-            pickupSection.classList.add('d-none');
-            
-            toggleInputs(studentFields, false);
-            toggleInputs(commonFields, false);
-            toggleInputs(internationalFields, false);
-
-            if (serviceKey === 'estudiantes') {
-                hiddenInput.value = "Transporte de Estudiantes";
-                formTitle.textContent = "DETALLES ESCOLARES";
-                studentFields.classList.remove('d-none');
-                toggleInputs(studentFields, true);
-                
-            } else if (serviceKey === 'internacional') {
-                hiddenInput.value = "Viajes Internacionales";
-                formTitle.textContent = "DETALLES INTERNACIONALES";
-                internationalFields.classList.remove('d-none');
-                toggleInputs(internationalFields, true);
-                
-            } else {
-                hiddenInput.value = "Servicios Especiales";
-                formTitle.textContent = "DETALLES ESPECIALES";
-                commonFields.classList.remove('d-none');
-                toggleInputs(commonFields, true);
-                pickupSection.classList.remove('d-none');
-            }
-        }
-    }
-
-    function togglePickup(val) {
-        const div = document.getElementById('pickupDetail');
-        if(val === 'si') div.classList.remove('d-none');
-        else div.classList.add('d-none');
-    }
-
-    function toggleCustomDate(val) {
-        const div = document.getElementById('customDateContainer');
-        if (val === 'Personalizado') div.classList.remove('d-none');
-        else div.classList.add('d-none');
-    }
-
-    function sendToWhatsApp(e) {
-        e.preventDefault();
-        const name = document.getElementById('client_name').value;
-        const lname1 = document.getElementById('client_lastname1').value;
-        const phone = document.getElementById('client_phone').value;
-        const email = document.getElementById('client_email').value;
-
-        if(!name || !lname1 || !phone) return alert("Por favor complete los Datos Personales.");
-        if(phone.length !== 8) return alert("El teléfono debe tener 8 dígitos.");
-
-        const hours = document.getElementById('comp_hours').value;
-        const desc = document.getElementById('comp_desc').value;
-
-        let message = `*SOLICITUD CORPORATIVA TRANSAVI*%0A-----------------------------------%0A`;
-        message += `*Solicitante:* ${name} ${lname1}%0A*Tel:* ${phone}%0A*Email:* ${email}%0A`;
-        message += `*Horario:* ${hours}%0A*Detalle:* ${desc}%0A`;
-
-        const waUrl = `https://wa.me/506${adminWhatsApp}?text=${message}`;
-        window.open(waUrl, '_blank');
-    }
-</script>
+{% include "home_scripts.html" %}
 {% endblock %}

@@ -55,6 +55,16 @@ def get_client_info(pin):
         })
     return jsonify({'success': False})
 
+# --- NUEVA RUTA API PARA VALIDAR TELÉFONO ---
+@main_bp.route('/api/check_phone/<string:phone>', methods=['GET'])
+def check_phone_exists(phone):
+    """
+    Verifica si un número de teléfono ya está registrado en la base de datos.
+    Retorna JSON: {'exists': True/False}
+    """
+    client = Client.query.filter_by(phone=phone).first()
+    return jsonify({'exists': client is not None})
+
 @main_bp.route('/api/recover_pin', methods=['POST'])
 def recover_pin():
     """
@@ -98,6 +108,12 @@ def create_reservation():
     lname2 = request.form.get('client_lastname2')
     phone = request.form.get('client_phone')
     email = request.form.get('client_email')
+
+    # --- VALIDACIÓN DE PREFIJO DE TELÉFONO (Servidor) ---
+    # Aunque el frontend lo valida, siempre debemos proteger el backend
+    if phone and not phone.startswith(('6', '7', '8')):
+        flash(f"El número de teléfono {phone} no es válido. Debe iniciar con 6, 7 u 8.", "danger")
+        return redirect(url_for('main.home'))
 
     # A. Intentar buscar si existe por PIN
     if pin_ingresado:
