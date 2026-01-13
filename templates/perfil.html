@@ -137,7 +137,7 @@
                                     <i class="fas fa-eye me-2"></i> Ver Solicitud
                                 </button>
 
-                                <!-- Botón Descargar -->
+                                <!-- Botón Descargar (Mantenido en lista principal también) -->
                                 <button onclick="downloadTicket('ticket-{{ res.id }}')" class="btn btn-outline-dark rounded-pill w-100 mb-2 btn-sm">
                                     <i class="fas fa-camera me-2"></i> Descargar Tarjeta
                                 </button>
@@ -339,7 +339,27 @@
                                 </div>
 
                             </div>
-                            <div class="modal-footer bg-light">
+                            <!-- FOOTER CON BOTONES DE ACCIÓN (WHATSAPP + DESCARGAR) -->
+                            <div class="modal-footer bg-light justify-content-center gap-2">
+                                <!-- Botón WhatsApp Dinámico -->
+                                <button type="button" class="btn btn-success rounded-pill px-4 shadow-sm" 
+                                        onclick="sendTicketWhatsApp(
+                                            '{{ res.id }}', 
+                                            '{{ client.name }} {{ client.last_name1 }}', 
+                                            '{{ res.service_category }}', 
+                                            '{{ res.date }}', 
+                                            '{{ res.departure_time }}', 
+                                            '{{ res.origin }}', 
+                                            '{{ res.destination }}'
+                                        )">
+                                    <i class="fab fa-whatsapp me-2"></i> Enviar al Admin
+                                </button>
+
+                                <!-- Botón Descargar PNG (Reutilizado) -->
+                                <button type="button" class="btn btn-dark rounded-pill px-4 shadow-sm" onclick="downloadTicket('ticket-{{ res.id }}')">
+                                    <i class="fas fa-download me-2"></i> Descargar PNG
+                                </button>
+                                
                                 <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
                             </div>
                         </div>
@@ -521,72 +541,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    .hover-card { transition: transform 0.2s; }
-    .hover-card:hover { transform: translateY(-2px); }
-    .x-small { font-size: 0.75rem; }
-    input[name="pin"] { letter-spacing: 3px; font-size: 1.2rem; }
-    
-    @media (max-width: 767px) {
-        .border-end-md { border-right: none !important; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
-    }
-    @media (min-width: 768px) {
-        .border-end-md { border-right: 1px solid #eee; }
-    }
-    .bg-light-danger { background-color: #fff5f5; }
-</style>
-
-<script>
-    /**
-     * Abre el modal de confirmación y configura la acción del formulario
-     */
-    function confirmCancel(reservationId) {
-        const form = document.getElementById('cancelForm');
-        form.action = `/cancel_reservation/${reservationId}`;
-        const modal = new bootstrap.Modal(document.getElementById('cancelConfirmModal'));
-        modal.show();
-    }
-
-    /**
-     * Función para convertir el DIV del ticket en una imagen PNG y descargarla.
-     */
-    function downloadTicket(elementId) {
-        const element = document.getElementById(elementId);
-        
-        const options = {
-            scale: 2, 
-            useCORS: true,
-            backgroundColor: '#ffffff',
-            logging: true,
-            onclone: (clonedDoc) => {
-                const clonedElement = clonedDoc.getElementById(elementId);
-                if(clonedElement) {
-                    clonedElement.style.opacity = '1';
-                    clonedElement.style.position = 'static'; 
-                }
-            }
-        };
-
-        const btn = event.currentTarget; 
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
-        btn.disabled = true;
-
-        html2canvas(element, options).then(canvas => {
-            const link = document.createElement('a');
-            link.download = `Comprobante_Transavi_${elementId.replace('ticket-', '')}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }).catch(err => {
-            console.error("Error generando ticket:", err);
-            alert("Hubo un error al generar la imagen. Por favor intenta de nuevo.");
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        });
-    }
-</script>
 {% endblock %}

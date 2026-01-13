@@ -1,0 +1,132 @@
+<!-- perfil_script.html -->
+<style>
+    .hover-card { transition: transform 0.2s; }
+    .hover-card:hover { transform: translateY(-2px); }
+    .x-small { font-size: 0.75rem; }
+    input[name="pin"] { letter-spacing: 3px; font-size: 1.2rem; }
+    
+    @media (max-width: 767px) {
+        .border-end-md { border-right: none !important; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
+    }
+    @media (min-width: 768px) {
+        .border-end-md { border-right: 1px solid #eee; }
+    }
+    .bg-light-danger { background-color: #fff5f5; }
+</style>
+
+<script>
+    /**
+     * Variable para el número del administrador.
+     * IMPORTANTE: Asegúrate de pasar 'about' en el backend (profile.py) para que esto sea dinámico.
+     * Si no se pasa 'about', usamos un fallback para evitar errores, pero no enviará al admin correcto.
+     */
+    const adminPhone = "{{ about.mobile_admin if about and about.mobile_admin else '00000000' }}";
+
+    /**
+     * Envía la información de la reserva por WhatsApp.
+     */
+    function sendTicketWhatsApp(id, client, service, date, time, origin, dest) {
+        let msg = `*HOLA, ENVÍO MI COMPROBANTE DE SOLICITUD* %0A`;
+        msg += `--------------------------------%0A`;
+        msg += `*ID RESERVA:* #${id}%0A`;
+        msg += `*Cliente:* ${client}%0A`;
+        msg += `*Servicio:* ${service}%0A`;
+        msg += `*Fecha Salida:* ${date} a las ${time}%0A`;
+        
+        // Agregar origen/destino solo si tienen datos reales
+        if (origin && origin !== 'None') msg += `*Origen:* ${origin}%0A`;
+        if (dest && dest !== 'None') msg += `*Destino:* ${dest}%0A`;
+        
+        msg += `--------------------------------%0A`;
+        msg += `Quedo atento a la confirmación. Gracias.`;
+        
+        window.open(`https://wa.me/506${adminPhone}?text=${msg}`, '_blank');
+    }
+
+    /**
+     * Abre el modal de confirmación y configura la acción del formulario
+     */
+    function confirmCancel(reservationId) {
+        const form = document.getElementById('cancelForm');
+        form.action = `/cancel_reservation/${reservationId}`;
+        const modal = new bootstrap.Modal(document.getElementById('cancelConfirmModal'));
+        modal.show();
+    }
+
+    /**
+     * INTERCEPTOR DE CANCELACIÓN:
+     * En lugar de dejar que el formulario envíe y recargue la página (lo que te mandaría al Home),
+     * atrapamos el evento 'submit', enviamos la petición por detrás (fetch) y luego
+     * recargamos la página de perfil para que veas el cambio inmediatamente.
+     */
+    document.getElementById('cancelForm').addEventListener('submit', function(e) {
+        e.preventDefault(); // Detenemos el envío normal
+        
+        const btn = this.querySelector('button[type="submit"]');
+        const originalContent = btn.innerHTML;
+        
+        // Feedback visual de carga
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelando...';
+
+        fetch(this.action, {
+            method: 'POST'
+        }).then(() => {
+            // ÉXITO: Ahora recargamos la lista de viajes.
+            // Buscamos el formulario de "Buscar PIN" y lo enviamos de nuevo automáticamente.
+            const searchForm = document.querySelector('form[action="/perfil"]');
+            if(searchForm) {
+                searchForm.submit();
+            } else {
+                // Fallback por si acaso
+                window.location.reload();
+            }
+        }).catch(err => {
+            console.error(err);
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+            alert("Ocurrió un error al intentar cancelar. Por favor intenta de nuevo.");
+        });
+    });
+
+    /**
+     * Función para convertir el DIV del ticket en una imagen PNG y descargarla.
+     */
+    function downloadTicket(elementId) {
+        const element = document.getElementById(elementId);
+        
+        const options = {
+            scale: 2, 
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: true,
+            onclone: (clonedDoc) => {
+                const clonedElement = clonedDoc.getElementById(elementId);
+                if(clonedElement) {
+                    clonedElement.style.opacity = '1';
+                    clonedElement.style.position = 'static'; 
+                }
+            }
+        };
+
+        const btn = event.currentTarget; 
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+        btn.disabled = true;
+
+        html2canvas(element, options).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `Comprobante_Transavi_${elementId.replace('ticket-', '')}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(err => {
+            console.error("Error generando ticket:", err);
+            alert("Hubo un error al generar la imagen. Por favor intenta de nuevo.");
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+</script>
