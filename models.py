@@ -55,7 +55,10 @@ class Reservation(db.Model):
     # Relación con el Cliente
     client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=True)
     
-    date = db.Column(db.String(20)) # Usado como Fecha de Salida
+    # NUEVO CAMPO: Fecha en que se llenó el formulario
+    created_at = db.Column(db.String(50), nullable=True)
+
+    date = db.Column(db.String(20)) # Usado como Fecha de Salida (Viaje)
     origin = db.Column(db.String(255))
     origin_url = db.Column(db.String(500))
     departure_time = db.Column(db.String(10))

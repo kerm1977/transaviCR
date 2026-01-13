@@ -164,8 +164,13 @@ def create_reservation():
     # ---------------------------------------------------------
     # 3. CREACIÓN DE LA RESERVA
     # ---------------------------------------------------------
+    
+    # NUEVO: Generar fecha de solicitud actual
+    now_str = datetime.now().strftime("%d/%m/%Y %I:%M %p")
+    
     new_res = Reservation(
         client=client,  # Relación con el objeto Cliente
+        created_at=now_str, # Guardamos la fecha de creación
         
         # Datos Generales
         date=date_str,
